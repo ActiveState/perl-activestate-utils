@@ -1,0 +1,20 @@
+atomic_ptr		T_ATOMICFILE
+atomicdir_ptr		T_ATOMICDIR
+
+INPUT
+T_ATOMICFILE
+	if (sv_derived_from($arg, \"ActiveState::File::Atomic\"))
+	    $var = ($type) SvIV((SV*)SvRV($arg));
+	else
+	    croak(\"$var is not of type ActiveState::File::Atomic\");
+T_ATOMICDIR
+	if (sv_derived_from($arg, \"ActiveState::Dir::Atomic\"))
+	    $var = ($type) SvIV((SV*)SvRV($arg));
+	else
+	    croak(\"$var is not of type ActiveState::Dir::Atomic\");
+
+OUTPUT
+T_ATOMICFILE
+	sv_setref_pv($arg, \"ActiveState::File::Atomic\", (void*)$var);
+T_ATOMICDIR
+	sv_setref_pv($arg, \"ActiveState::Dir::Atomic\", (void*)$var);

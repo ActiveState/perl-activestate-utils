@@ -1,0 +1,35 @@
+#!/usr/bin/perl -w
+
+use Config;
+
+my $distname = shift || die;
+my $version  = shift || die;
+my $abstract = shift;
+
+my $ppd_version = join(",", map int($_), split(/\./, $version));
+$ppd_version .= ",0" until ($ppd_version =~ tr/,//) >= 3;
+
+use lib "./lib";
+use ActiveState::Handy qw(run);
+
+(my $archname = $Config{archname}) =~ s/-(multi|thread)//g;
+
+run("gtar --owner root --group bin -cf $distname-$version-$archname.tar blib");
+run("gzip --best --force $distname-$version-$archname.tar");
+
+open(PPD, ">$distname.ppd") || die;
+print PPD <<"EOT";
+<SOFTPKG NAME="$distname" VERSION="$ppd_version">
+        <TITLE>$distname</TITLE>
+        <ABSTRACT>$abstract</ABSTRACT>
+        <AUTHOR>ActiveState Corp</AUTHOR>
+        <IMPLEMENTATION>
+                <DEPENDENCY NAME="Time-HiRes" VERSION="1,0,0,0"/>
+                <OS NAME="$^O" />
+                <ARCHITECTURE NAME="$Config{archname}" />
+                <CODEBASE HREF="$distname-$version-$archname.tar.gz" />
+        </IMPLEMENTATION>
+</SOFTPKG>
+EOT
+close(PPD) || die;
+

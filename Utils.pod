@@ -1,0 +1,38 @@
+=head1 NAME
+
+ActiveState::Utils - Modules developed at ActiveState for use internally.
+
+=head1 DESCRIPTION
+
+The following sections describe each module included in this bundle.
+
+=head2 ActiveState::Install
+
+A replacement for ExtUtils::Install
+
+=head2 ActiveState::Handy
+
+A collection of small utility functions.
+
+=head2 ActiveState::Menu
+
+Print a menu and execute corresponding actions.
+
+=head2 ActiveState::P4
+
+A simple but elegant way to use Perforce from Perl scripts. Uses the C<p4>
+command-line utility to carry out the commands you specify.
+
+See L<ActiveState::P4> for more information.
+
+=head2 ActiveState::Prompt
+
+Interactive questions.
+
+=head2 ActiveState::StopWatch
+
+A simple but elegant way to time portions of your applications.
+
+=head1 COPYRIGHT
+
+Copyright (c) 2002, ActiveState Corporation. All Rights Reserved.

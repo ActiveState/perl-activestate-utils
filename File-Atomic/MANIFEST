@@ -1,0 +1,9 @@
+Atomic.pm
+Atomic.xs
+MANIFEST
+Makefile.PL
+t/basic.t
+t/errors.t
+t/leak.t
+t/rotate.t
+typemap
