@@ -1,7 +1,7 @@
 abstract: Internal ActiveState utility modules
 name: ActiveState-Utils
 version: 1.19
-author: ActiveState
+author: ActiveState <support@activestate.com>
 install: no
 dont_build: 
   - yes
