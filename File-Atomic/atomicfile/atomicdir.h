@@ -89,12 +89,41 @@ atomic_closedir(atomic_dir *self);
  * file will never change, since no other program may modify `current` while
  * the lock is held.
  *
+ * Readers should call this once and remember the value returned for
+ * use in all the operations that need to see a consistent "view" of
+ * the data.
+ *
  * Returns ATOMIC_ERR_NOMEM if the buffer is too small.
  */
 extern atomic_err
 atomic_currentdir(atomic_dir *self, char *name, size_t sz);
 extern int
 atomic_currentdir_i(atomic_dir *self);
+
+/* atomic_version()
+ * atomic_version_i()  
+ *
+ * Get the version associated with the data in a particular directory.
+ * Interally this dereferences a symlink called "version" in the
+ * specified directory.
+ *
+ * The input to atomic_version and atomic_version_i should be the same
+ * format as the output of atomic_currentdir or atomic_currentdir_i,
+ * respectively.
+ *
+ * The buffer given must be at least ATOMIC_VERSION_MAX_LEN long.
+ *
+ * Returns the length of the version string, not including the trailing NUL.
+ * Returns 0 if there is no version.
+ */
+
+#define ATOMIC_VERSION_MAX_LEN 255
+
+extern int
+atomic_version(atomic_dir *self, const char* dir, char *version);
+extern int
+atomic_version_i(atomic_dir *self, int dir, char *version);
+
 
 /* atomic_scratchdir()
  * atomic_scratchdir_i()
@@ -111,15 +140,25 @@ atomic_scratchdir(atomic_dir *self, char *name, size_t sz);
 extern int
 atomic_scratchdir_i(atomic_dir *self);
 
-/* atomic_commit()
+/* atomic_commitdir()
+ * atomic_commitdir_version()  
  *
  * Commits changes made to the scratch directory returned by
  * atomic_scratchdir(). All locks are released, and 'current' is updated. This
  * implies calling atomic_closedir(), so the caller should not call any
  * further methods after calling atomic_commitdir().
+ *
+ * atomic_commitdir_version is the same as atomic_commitdir except that it
+ * allows you to associate a version string with the data in the directory.
+ * The version will be stored in a symlink with the name ATOMIC_VERSION_SYMLINK
+ * in the data directory.  The version string will be truncated at
+ * ATOMIC_VERSION_MAX_LEN characters.
  */
 extern atomic_err
 atomic_commitdir(atomic_dir *self);
+extern atomic_err
+atomic_commitdir_version(atomic_dir *self, const char *version);
+
 
 /* atomic_rollbackdir()
  *
@@ -135,6 +174,7 @@ atomic_rollbackdir(atomic_dir *self, int ix);
  * Invokes the callback 'cb' for each backup directory. Stops if the callback
  * returns false or when all directories have been scanned. Scanning starts at
  * the currently-active directory.
+ * XXX The API here seems broken--they is no way to return error.
  */
 extern int
 atomic_scandir(atomic_dir *self,

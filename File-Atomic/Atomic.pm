@@ -9,9 +9,13 @@ ActiveState::File::Atomic->bootstrap($VERSION);
 
 sub tempfile {
     my $o = shift;
-    my $tmpfile = $o->_tempfile;
-    open (my $FH, ">", $tmpfile) or die "can't write to $tmpfile: $!";
-    return $FH;
+    return $o->_save_fh || do {
+	my $tmpfd = $o->_tempfile;
+	open (my $FH, ">&$tmpfd")
+	    or die "can't dup fd $tmpfd: $!";
+	select((select($FH), $| = 1)[0]); # turn on autoflush
+	$o->_save_fh($FH); # we'll close $FH on $o->commit_tempfile()
+    };
 }
 
 sub commit_file {
@@ -42,7 +46,6 @@ ActiveState::File::Atomic - edit files atomically with locking
        s/foo/bar/g;
        print $wfh $_;
    }
-   close($wfh);
    $at->commit_tempfile;
 
    # If you have your own file:
@@ -64,8 +67,8 @@ ActiveState::File::Atomic provides the following methods:
     $file = ActiveState::File::Atomic->new($file, %opts);
 
 Creates a new object, opening the C<$file> in either read-only or
-read/write mode and locking it.  If the file can not be opened or the
-lock on it not obtained then the constuctor will croak.
+read/write mode and locking it.  If the file cannot be opened or the
+lock on it cannot be obtained, the constuctor will croak.
 
 Options are passed as key/value pairs after the filename.  The
 supported options are:
@@ -81,18 +84,34 @@ read-only, and these methods will croak if you try to use them.
 =item create
 
 A boolean. If true, and writable is also true, the file is created if
-it does not already exist.  Note that the file will be created when
-the ActiveState::File::Atomic object is created, so it will end up
-existing and empty even if commit is not called.
+it does not already exist.  Note that no guarantees are made about
+when the file is created.  It may get created immediately, or it may
+only get created when the ActiveState::File::Atomic object is committed.
+
+=item mode
+
+If the create option was used, this option specifies the file
+creation mode for the newly created file.
+
+=item owner
+
+If the create option was used, this option specifies the numeric uid
+for the newly created file.  Setting this option only makes sense
+when running with superuser privileges.
+
+=item group
+
+If the create option was used, this option specifies the numeric gid
+for the newly created file.  The superuser can specify arbitrary
+group IDs, but unprivileged users are normally only allowed to
+specify one of the groups they belong to.
 
 =item nolock
 
-A boolean. If true, and neither 'create' nor 'writable' is also true, the file
-is opened without locking. This is safe because file updates happen
-atomically. It can lead to inconsistent data being read when multiple files
-are being updated at once, so this option should only be used for systems
-which only read a single file (or where data from multiple files are
-independent).
+A boolean.  If true, the file is not actually locked until you call the
+lock() method.  This allows you to minimize the amount of time between
+the lock() and the commit(), if necessary.  Note that you can't actually
+call any other methods on the object until you call the lock() method.
 
 =item timeout
 
@@ -103,9 +122,9 @@ out waiting for the lock.
 
 =item backup_ext
 
-A string. If specified, a backup file will be created when you call the commit()
-method. The backup file will be named the same thing as the original file with
-C<backup_ext> appended.
+A string. If specified, a backup file will be created when you call the
+commit() method. The backup file will be named the same thing as the
+original file with C<backup_ext> appended.
 
 =item rotate
 
@@ -121,7 +140,7 @@ sort correctly.
 
 =item slurp()
 
-"Slurps" the entire contents of the file into a string, and returns it.
+Reads the entire contents of the file into a string, and returns it.
 
 This method croaks on failure.
 
@@ -150,10 +169,14 @@ on the object after calling commit_string().
    $at->commit_file($filename)
 
 Commits the contents of C<$filename> to the file. Internally, this copies the
-contents of C<$filename> to the temporary file. The temporary file is
+contents of C<$filename> into a temporary file. The temporary file is then
 atomically renamed to the original file. Backup files are created according to
 the settings of C<backup_ext> and C<rotate>.  The method will croak on failure
 or if the C<writable> option was not passed to the constructor.
+
+Note that the specified file is only opened, read from, and closed.  It is
+neither modified nor deleted by ActiveState::File::Atomic.  The caller is
+responsible for cleaning up the file when they no longer need it.
 
 Calling commit_file() implies close(). You should not call any other method
 on the object after calling commit_file().
@@ -176,21 +199,18 @@ on the object after calling commit_fd().
 
    my $wfh = $at->tempfile;
 
-Creates the temporary file and opens it for writing. Using tempfile() and
-commit_tempfile() is more efficient than using commit_file() for large files,
-because it avoids copying the data to the temporary file.
+Returns a writable handle to a temporary file that will be committed
+by commit_tempfile().  The returned handle is owned by
+ActiveState::File::Atomic and should NOT be closed by the caller.
 
 This method croaks on failure.
 
 =item commit_tempfile()
 
-Commits the contents of the temporary file. The temporary file is atomically
-renamed to the original file. Backup files are created according to the
-settings of C<backup_ext> and C<rotate>.  The method will croak on failure or
-if the C<writable> option was not passed to the constructor.
+Commits the contents of the temporary file.
 
-Calling commit_fd() implies close(). You should not call any other method
-on the object after calling commit_fd().
+Calling commit_tempfile() implies close(). You should not call any other
+method on the object after calling commit_tempfile().
 
 =item close()
 
@@ -206,7 +226,7 @@ This method can not fail and has no return value.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2002, ActiveState Corporation.
+Copyright (C) 2004, ActiveState Corporation.
 All Rights Reserved.
 
 =cut

@@ -41,7 +41,6 @@ my $file = mkfile($f);
     my $at = ActiveState::File::Atomic->new($file, writable => 1, rotate => 4);
     my $wfh = $at->tempfile;
     print $wfh "Hello, world\n";
-    close($wfh);
     $at->commit_tempfile;
 
     my @f = lstmp();
@@ -54,7 +53,6 @@ for (1 .. 10) {
     my $at = ActiveState::File::Atomic->new($file, writable => 1, rotate => 4);
     my $wfh = $at->tempfile;
     while (defined($_ = $at->readline)) { print $wfh "blah: $_" }
-    close($wfh);
     $at->commit_tempfile;
 }
 {
@@ -73,7 +71,7 @@ for my $n (1 .. 100) {
     my $at = ActiveState::File::Atomic->new($file,
 	writable	=> 1,
 	backup_ext	=> ',',
-	rotate		=> 42,
+	rotate		=> "42",
     );
     $at->commit_string('');
     my $exp_n = $n > 42 ? 42 : $n;
@@ -93,7 +91,6 @@ for my $n (1 .. 100) {
     my $w = $at->tempfile;
     while (defined($_ = $at->readline)) { print $w $_ }
     print $w "$n\n";
-    close($w);
     $at->commit_tempfile;
     my @f = lstmp();
     ok(@f, 1 + $n);

@@ -219,7 +219,7 @@ The option C<disabled_selectable> can be used to counter that
 behaviour.
 
 The loop_until option, if specified, makes the menu run in a loop
-until one of the indices specifed by the option is selected.  The
+until one of the indices specified by the option is selected.  The
 value of the option should be either a single index, or a reference
 to an array of indices.
 

@@ -153,20 +153,20 @@ method.
 
 =item $fh->handle
 
-Returns back the filehandle passed to the contructor.
+Returns back the filehandle passed to the constructor.
 
 =item $fh->line_width
 
 =item $fh->line_width( $new_width )
 
-This get/set the curent line width.  The line width is used by the
+This get/set the current line width.  The line width is used by the
 soft_space() method.  The default is 70.
 
 =item $fh->indent_offset
 
 =item $fh->indent_offset( $new_offset )
 
-This get/set the standard identation offset.  The default is 4.
+This get/set the standard indentation offset.  The default is 4.
 
 =item $fh->print( $string )
 
@@ -188,7 +188,7 @@ This returns the current indentation column.
 
 =item $fh->over( $offset )
 
-This increase the identation column with the given amount.  Without
+This increase the indentation column with the given amount.  Without
 argument the standard amount is used.
 
 =item $fh->over_cur

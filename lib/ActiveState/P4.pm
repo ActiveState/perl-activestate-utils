@@ -869,7 +869,7 @@ Example:
 write()
 
 Adds text to the description of the submission. Takes no arguments: assumes
-you've been using C<formline()> to accumulate text in Perl's accumlator,
+you've been using C<formline()> to accumulate text in Perl's accumulator,
 C<$^A>. Clears the accumulator after printing the text therein.
 
 Example:

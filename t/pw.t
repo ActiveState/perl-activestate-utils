@@ -2,7 +2,7 @@ use strict;
 use ActiveState::Unix::Pw qw(useradd userdel groupadd groupdel su);
 use Test qw(ok plan);
 
-BEGIN { plan tests => 8 }
+BEGIN { plan tests => 9 }
 
 my %opts = (_norun=>1);
 
@@ -54,6 +54,12 @@ my %su2 = (
         login=>1,
 );
 
+my %su_silent = (
+        user=>'monkey',
+        command=>'/bin/foo --bar',
+        silent => 1,
+);
+
 if ($^O eq 'aix') {
     ok(scalar groupadd(%groupadd,%opts),'/usr/bin/mkgroup id=777 pw_group');
     ok(scalar useradd(%useradd,%opts),'/usr/bin/mkuser "gecos=test user - delete" home=/home/pw_user_test groups=pw_group pw_user');
@@ -63,6 +69,7 @@ if ($^O eq 'aix') {
     ok(scalar groupdel(%groupdel,%opts),'/usr/sbin/rmgroup pw_group');
     ok(scalar su(%su,%opts), '/usr/bin/su monkey "-c /bin/foo --bar"');
     ok(scalar su(%su2,%opts), '/usr/bin/su - monkey "-c /bin/foo --bar"');
+    ok(scalar su(%su_silent,%opts), '@/usr/bin/su monkey "-c /bin/foo --bar"');
 }
 elsif ($^O eq 'freebsd') {
     ok(scalar groupadd(%groupadd,%opts),'/usr/sbin/pw groupadd -g 777 pw_group');
@@ -73,6 +80,7 @@ elsif ($^O eq 'freebsd') {
     ok(scalar groupdel(%groupdel,%opts),'/usr/sbin/pw groupdel pw_group');
     ok(scalar su(%su,%opts), '/usr/bin/su monkey -c "/bin/foo --bar"');
     ok(scalar su(%su2,%opts), '/usr/bin/su - monkey -c "/bin/foo --bar"');
+    ok(scalar su(%su_silent,%opts), '@/usr/bin/su monkey -c "/bin/foo --bar"');
 }
 else {
     ok(scalar groupadd(%groupadd,%opts),'/usr/sbin/groupadd -g 777 pw_group');
@@ -84,9 +92,11 @@ else {
     if ($^O eq 'linux') {
         ok(scalar su(%su,%opts), '/bin/su monkey -c "/bin/foo --bar"');
         ok(scalar su(%su2,%opts), '/bin/su - monkey -c "/bin/foo --bar"');
+        ok(scalar su(%su_silent,%opts), '@/bin/su monkey -c "/bin/foo --bar"');
     } else {
         ok(scalar su(%su,%opts), '/usr/bin/su monkey -c "/bin/foo --bar"');
         ok(scalar su(%su2,%opts), '/usr/bin/su - monkey -c "/bin/foo --bar"');
+        ok(scalar su(%su_silent,%opts), '@/usr/bin/su monkey -c "/bin/foo --bar"');
     }
 }
 

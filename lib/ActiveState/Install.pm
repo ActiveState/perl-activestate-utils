@@ -10,7 +10,15 @@ use ActiveState::Prompt qw(enter);
 
 use base 'Exporter';
 our @EXPORT = qw(install);
-our @EXPORT_OK = qw(installed uninstall summary);
+our @EXPORT_OK = qw(installed uninstall summary
+                    CFG_FORCE_OURS CFG_KEEP_THEIRS
+		    FILE_ABANDON FILE_ABANDON_MODIFIED
+                   );
+
+sub CFG_FORCE_OURS        () { 1 }
+sub CFG_KEEP_THEIRS       () { 2 }
+sub FILE_ABANDON          () { 1 }
+sub FILE_ABANDON_MODIFIED () { 2 }
 
 my $owner;
 my $group;
@@ -18,6 +26,8 @@ my $verbose;
 my $pkg;
 my $ver;
 my $config_file;  # a hash reference
+my $special_file; # a hash reference
+my $special_pat;  # a hash reference
 my @rollback_actions;
 my @commit_actions;
 my %md5_old;
@@ -53,9 +63,23 @@ sub install {
     }
 
     $config_file = delete $args{config_files} || {};
+    $special_file = delete $args{special_files} || {};
+    $special_pat = {};
     for my $c (keys %$config_file) {
 	die "Configuration file $c is not in package"
 	    unless -f $c;
+    }
+    for my $d (keys %$special_file) {
+	# entries that start with "~" are treated as patterns
+	# (the "~" will be stripped from the pattern before matching)
+	if ($d =~ m,^~,) {
+	    (my $pat = $d) =~ s,^~,,;
+	    $special_pat->{$d} = [qr/$pat/, delete $special_file->{$d}];
+	}
+	# entries that end with "/" are treated as directories
+	elsif ($d =~ m,/\z,) {
+	    $special_pat->{$d} = [qr/^\Q$d\E/, delete $special_file->{$d}];
+	}
     }
 
     if (defined($owner) && $owner !~ /^\d+$/) {
@@ -81,7 +105,8 @@ sub install {
     }
 
     if ($^W && %args) {
-	warn "Unrecognized install args: " . join(", ", keys %args);
+	# programmer error
+	die "Unrecognized install() args: " . join(", ", keys %args);
     }
 
     # reset state
@@ -101,11 +126,11 @@ sub install {
 	if ($lockfile) {
 	    my $tmp = "$etc/lock.$$";
 	    die if -e $tmp;
-	    open(my $lock, ">", $tmp) || die "Can't create $tmp: $!";
-	    print $lock "$pkg-$ver $$\n";
-	    close($lock);
+	    open(my $fh, ">", $tmp) || die "Can't create $tmp: $!";
+	    print $fh "$pkg-$ver $$\n";
+	    close($fh);
 
-	    $lock = "$etc/$lockfile";
+	    my $lock = "$etc/$lockfile";
 	    if (link($tmp, $lock)) {
 		_on_commit("unlink", $lock);
 		_on_rollback("unlink", $lock);
@@ -139,9 +164,13 @@ sub install {
         # copy files
 	for my $from (sort keys %$files) {
 	    my $to = $files->{$from};
-	    die "There is no '$from' to install from" unless -e $from;
+	    die "There is no '$from' to install from" unless -l $from || -e _;
 	    
-	    if (-d _) {
+            if (-l _) {
+                # install link
+                _copy_link($from, $to);
+            }
+	    elsif (-d _) {
 		# install directory
 		die "Can't install a directory on top of $to"
 		    if -e $to && !-d _;
@@ -166,6 +195,12 @@ sub install {
 	    next if $md5_new{$fname};
 	    next unless -e $fname;
 	    next if $inode_new{join(":", (stat _)[0,1])};  # safety net
+
+	    # abandon file?
+	    my $abandon = _special_file($fname) || 0;
+	    next if $abandon == FILE_ABANDON;
+	    next if $abandon == FILE_ABANDON_MODIFIED
+	            and _file_md5($fname) ne $md5_old{$fname};
 
 	    if ($config_old{$fname} && _file_md5($fname) ne $md5_old{$fname}) {
 		# locally modified configuration file
@@ -209,6 +244,15 @@ sub install {
     }
 
     return wantarray ? %summary : ($summary{new} || 0) + ($summary{update} || 0);
+}
+
+sub _special_file {
+    my $fname = shift;
+    return $special_file->{$fname} if exists $special_file->{$fname};
+    for my $d (keys %$special_pat) {
+	return $special_pat->{$d}[1] if $fname =~ $special_pat->{$d}[0];
+    }
+    return undef;
 }
 
 sub _copy_dir {
@@ -304,10 +348,10 @@ sub _copy_file {
 	    # been modified. Need to install so that both version
 	    # are left around.
 	    print " - modified file with local tweaks\n" if $verbose > 2;
-	    if ($config_flags == 1) {
+	    if ($config_flags == CFG_FORCE_OURS) {
 		_ppmsave($to);
 	    }
-	    elsif ($config_flags == 2) {
+	    elsif ($config_flags == CFG_KEEP_THEIRS) {
 		$copy_to .= ".ppmdist";
 		$from{$copy_to} = $from;
 	    }
@@ -366,10 +410,15 @@ sub _copy_file {
 
     # transfer -x bits and turn off -w for non-config files
     my $x = ($from_mode & 0111);
-    if ($x || !$config_flags) {
+    {
 	my $to_mode = (stat $to)[2];
 	my $new_mode = $to_mode | $x;
-	$new_mode &= ~0222 unless $config_flags;
+	if ($config_flags) {
+	    $new_mode |= 0200;
+	}
+	else {
+	    $new_mode &= ~0222;
+	}
 	if ($new_mode != $to_mode) {
 	    printf " chmod(%04o, '%s')\n", $new_mode, $to if $verbose > 2;
 	    chmod($new_mode, $to) || die "Can't chmod: $!";
@@ -466,17 +515,21 @@ sub _do {
 	my($op, @args) = @$a;
 	if ($op eq "rmdir") {
 	    for my $d (@args) {
-		rmdir($d) || warn "Can't rmdir($d): $!";
+		rmdir($d) || warn "warning: Can't rmdir($d): $!";
 	    }
 	}
 	elsif ($op eq "unlink") {
-	    unlink(@args) || warn "Can't unlink(@args): $!";
+	    # Some platforms (HP-UX) cannot delete in-use executables
+	    # and will produce "Text file busy" (ETXTBSY) warnings
+	    # here.  So make it clear this is "just" a warning.
+	    unlink(@args) || warn "warning: Can't unlink(@args): $!";
 	}
 	elsif ($op eq "rename") {
-	    rename($args[0], $args[1]) || warn "Can't rename(@args): $!";
+	    rename($args[0], $args[1]) || warn "warning: Can't rename(@args): $!";
 	}
 	else {
-	    warn "Don't know how to '$op'";
+	    # programmer error
+	    die "Don't know how to '$op'";
 	}
     }
 }
@@ -510,7 +563,8 @@ sub installed {
     my $pkg_file = "$etc/.packages/$pkg";
 
     if ($^W && %args) {
-	warn "Unrecognized install args: " . join(", ", keys %args);
+	# programmer error
+	die "Unrecognized installed() args: " . join(", ", keys %args);
     }
 
     return ActiveState::Install::Pkg->new($pkg_file);
@@ -598,11 +652,17 @@ ActiveState::Install - install packages on the system
 
 =head1 SYNOPSIS
 
- use ActiveState::Install qw(install);
+ use ActiveState::Install qw(install CFG_KEEP_THEIRS FILE_ABANDON);
  install(pkg => "Foo",
          ver => "0.1",
 	 etc => "/usr/local/etc",
 	 files => { "bin" => "/usr/local/bin" },
+	 config_files => { "etc/foo.conf" => CFG_KEEP_THEIRS },
+	 special_files => {
+	     "/usr/local/bin/i-have-a-new-owner" => FILE_ABANDON,
+	     "/usr/local/etc/Foo/userdata/" => FILE_ABANDON,
+	     "~/usr/local/etc/.*\\.conf" => FILE_ABANDON_MODIFIED,
+	 },
 	);
 
 =head1 DESCRIPTION
@@ -672,14 +732,48 @@ be copied.  The hash values are the target location.
 
 This is a hash reference that indicates which of the files to be
 installed are configuration files.  The hash values give the type of
-configuration file; C<1> or C<2>.  Type 1 files are always installed
-and if the user has changed them since last install, the user edited
-file is left with F<.ppmsave> extension.  Type 2 files are not updated
-if the user has edited the file.  Instead the file is installed with
-F<.ppmdist> extension.
+configuration file; C<CFG_FORCE_OURS> or C<CFG_KEEP_THEIRS>.  Files
+of type C<CFG_FORCE_OURS> are always installed and if the user has
+changed them since last install, the user edited file is left with
+F<.ppmsave> extension.  Files of type C<CFG_KEEP_THEIRS> are not
+updated if the user has edited the file.  Instead the file is
+installed with F<.ppmdist> extension.
 
 Locally modified configuration files that are deleted are saved with
-the F<.ppmdelete> extension.
+the F<.ppmdeleted> extension.
+
+The manifest constants C<CFG_FORCE_OURS> and C<CFG_KEEP_THEIRS>
+are exported on request.
+
+=item special_files
+
+This is a hash reference that lists the files that need to be
+handled in some special way.  The keys are the (absolute) file
+names, directory names, or regular expressions.  The value is an
+integer that specifies some special behavior when handling the
+named file, files within the named directory, or files matching
+the specified pattern.  Keys that end in a "/" are interpreted
+as directories.  Keys that begin with "~" are interpreted as
+regular expressions (the "~" will be stripped before attempting
+to match it).
+
+The only currently supported values are the manifest constants
+C<FILE_ABANDON> and C<FILE_ABANDON_MODIFIED> (which are exported
+on request).  C<FILE_ABANDON> designates files that must not be
+deleted from the target installation if they are present.
+C<FILE_ABANDON_MODIFIED> has the same behavior as C<FILE_ABANDON>
+but only applies if the file has been modified since the last
+time it was installed.  (If it has not been modified, it will
+be removed as usual.)
+
+This option is normally used to mark "precious" files such as
+user-modifiable configuration files that should be left as is
+even if the installable package no longer supplies them.
+It is also useful for files that may have migrated from one
+package to another.  Newer versions of the package that used
+to own the file should add the file to C<special_files> as
+type C<FILE_ABANDON> to prevent it from being deleted after
+an upgrade.
 
 =item lock_file
 

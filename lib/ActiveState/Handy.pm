@@ -5,7 +5,8 @@ use strict;
 our $VERSION = '0.02';
 
 use base 'Exporter';
-our @EXPORT_OK = qw(add cat iso_date run shell_quote xml_esc xml_clean ceil);
+our @EXPORT_OK = qw(add cat cat_text iso_date run shell_quote 
+                    xml_esc xml_clean ceil cp_tree cp_files);
 
 require Carp;
 
@@ -28,6 +29,48 @@ sub cat {
     binmode($fh);
     local $/;
     return scalar <$fh>;
+}
+
+sub cat_text {
+    my $f = shift;
+    open(my $fh, "<", $f) || return undef;
+    local $/;
+    return scalar <$fh>;
+}
+
+sub cp_files {
+    require File::Copy;
+    require File::Path;
+
+    my($from,$to,@files) = @_;
+    File::Path::mkpath($to) unless -d $to;
+    foreach my $file (@files) {
+	die "$from/$file doesn't exist" unless -f "$from/$file";
+	File::Path::mkpath("$to/$1") if $file =~ m|^(.*)/[^/]+$|;
+	chmod 0777, "$to/$file";
+	File::Copy::copy("$from/$file", "$to/$file")
+	    or die "Can't copy '$from/$file' to '$to/$file'";
+    }
+}
+
+sub cp_tree {
+    require File::Copy;
+    require File::Path;
+
+    my($from,$to) = @_;
+    opendir(my $dir, $from) or die "Can't read directory '$from': $!";
+    while (defined(my $file = readdir($dir))) {
+	next if $file =~ /^\.\.?$/;
+	if (-d "$from/$file") {
+	    cp_tree("$from/$file", "$to/$file");
+	    next;
+	}
+	next unless -f "$from/$file";
+	File::Path::mkpath($to) unless -d $to;
+	chmod 0777, "$to/$file";
+	File::Copy::copy("$from/$file", "$to/$file")
+	    or die "Can't copy '$from/$file' to '$to/$file'";
+    }
 }
 
 sub iso_date {
@@ -81,6 +124,7 @@ sub run {
 
         Carp::croak($msg);
     };
+    return $?;
 }
 
 sub shell_quote {
@@ -143,12 +187,29 @@ Adds the given arguments together.
 =item cat( $file )
 
 Returns the content of a file.  Returns C<undef> if the file could not
-be openeded.  Unlike the cat(1) command it only takes a single file
-name argument.
+be opened.  Unlike the cat(1) command it only takes a single file
+name argument.  The file is read in binary mode.
+
+=item cat_text( $file )
+
+Just like cat() but will read the file in text mode.  Makes a
+difference on some platforms (like Windows).
 
 =item ceil( $number )
 
 Rounds the number up to the nearest integer.  Same as POSIX::ceil().
+
+=item cp_files( $from, $to, @files )
+
+Copies files from source to destination directory. Destination directory
+will be created if it doesn't exist.  Function dies if any file cannot
+be found.
+
+=item cp_tree( $from, $to )
+
+Recursively copies all files and subdirectories from source to destination
+directory. All destination directories will be created if they don't
+already exist.
 
 =item iso_date( $time )
 
@@ -200,11 +261,11 @@ element. Does not perform escaping.
 =head1 ENVIRONMENT
 
 If the AS_RUN_SILENT environment variable is TRUE, then printing of
-the command about to run for run() is supressed.
+the command about to run for run() is suppressed.
 
 If the AS_RUN_PREFIX environment variable is set, then the printed
 command is prefixed with the given string.  If AS_RUN_SILENT is TRUE,
-then this value is ignoed.
+then this value is ignored.
 
 =head1 BUGS
 

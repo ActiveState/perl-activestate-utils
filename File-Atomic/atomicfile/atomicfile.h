@@ -1,6 +1,6 @@
 /* Interface to atomically update files.
  *
- * Copyright (c) 2002, ActiveState Corporation
+ * Copyright (c) 2004, ActiveState Corporation
  * All Rights Reserved. */
 
 #ifndef __ATOMIC_FILE_H__
@@ -20,12 +20,14 @@ typedef struct {
     struct stat sbuf;
     char       *dest;
 
-    /* readline() and readfile() internals */
+    /* readblock(), readline() and readfile() internals */
+    char       *nextblock;
     char       *nextline;
     char       *mbuf;
 
-    /* temporary file */
+    /* the locked file; will be rename()d into place */
     int         fd_write;
+    char       *lock;
     char       *temp;
 } atomic_file;
 
@@ -40,9 +42,8 @@ typedef struct {
  * NULL, in which case defaults are used for each option: no backup is made,
  * and the file is opened readonly.
  *
- * 'filename' is always locked, either with a shared lock for readonly files,
- * or with an exclusive lock for writable files. The file remains locked until
- * either atomic_close() or atomic_commit() are called.
+ * Calls atomic_lock() unless 'nolock' is set in 'opts'. The file remains
+ * locked until either atomic_close() or atomic_commit() are called.
  *
  * Returns ATOMIC_ERR_SUCCESS if all went well, otherwise it returns
  * an error code:
@@ -64,10 +65,27 @@ atomic_open(atomic_file **self, char *filename, atomic_opts *opts);
 extern void
 atomic_close(atomic_file *self);
 
+/* atomic_lock()
+ *
+ * Locks the file. This opens the destination file for reading, so that
+ * updates made by other writers are visible to the reader methods. Both
+ * readers and writers should call this if the 'nolock' option was passed to
+ * atomic_open().
+ *
+ * Nothing should be assumed about the underlying implementation of the
+ * locking (it could be fcntl/flock/link/pthread_rwlock/semaphore based,
+ * depending what works best on each platform).
+ */
+extern atomic_err
+atomic_lock(atomic_file *self);
+
 /* atomic_read_handle()
  *
- * Returns the read file descriptor. The caller should never write to this
- * descriptor. This call never fails.
+ * Returns the read file descriptor, or -1 if the file has not yet been
+ * opened. When opening a file for ATOMIC_READ, atomic_open() opens the file
+ * immediately. For writers, however, the file is not opened until
+ * atomic_lock() is called: during atomic_open(), unless the 'nolock' option
+ * is set.
  */
 #define atomic_read_handle(self) ((self)->fd_read)
 
@@ -76,6 +94,17 @@ atomic_close(atomic_file *self);
  * Returns the filename passed to atomic_open().
  */
 #define atomic_filename(self) ((self)->dest)
+
+/* atomic_readblock()
+ *
+ * Returns a block of data from the structure. Each call to this
+ * writes to the same buffer, so each call clobbers the previous
+ * value. The memory is owned by the object. Lines returned may not be
+ * NUL-terminated. When there are no more lines, 'line' will be
+ * returned NULL.
+ */
+extern atomic_err
+atomic_readblock(atomic_file *self, size_t blocklen, char **line, size_t *length);
 
 /* atomic_readline()
  *
@@ -132,7 +161,11 @@ atomic_commit_string(atomic_file *self, char *buffer, size_t length);
 /* Use these functions if you want access to the temporary file which will be
  * renamed over the original. atomic_tempfile() returns the filename and a
  * file descriptor which is opened for read and write. Calling
- * atomic_commit_tempfile() will commit the contents of the tempfile. */
+ * atomic_commit_tempfile() will commit the contents of the tempfile.
+ *
+ * DO NOT close() the fd given. DO NOT open(filename) and then close that fd.
+ * Doing so may release the exclusive lock on some platforms, which means
+ * waiting writers will not see the changes made by this object. */
 extern atomic_err
 atomic_tempfile(atomic_file *self, int *fd, char **filename);
 extern atomic_err

@@ -9,6 +9,7 @@
 
 typedef struct {
     atomic_file *at;
+    SV* tempfh;
 } atomic_t, *atomic_ptr;
 
 typedef struct {
@@ -18,27 +19,52 @@ typedef struct {
 #define handle_error(self, err) \
     do { \
 	if (err != ATOMIC_ERR_SUCCESS) \
-	    S_handle_error(aTHX_ atomic_filename(self->at), err); \
+	    S_handle_error(aTHX_ "file", atomic_filename(self->at), err); \
     } while (0)
 
 #define handle_dir_error(self, err) \
     do { \
 	if (err != ATOMIC_ERR_SUCCESS) \
-	    S_handle_error(aTHX_ atomic_dirname(self->at), err); \
+	    S_handle_error(aTHX_ "directory", atomic_dirname(self->at), err); \
     } while (0)
 
+#define free_tempfile(self) do {                                            \
+    if (self->tempfh && !PL_dirty) {                                        \
+	GV *gv;                                                             \
+        if (SvROK(self->tempfh))                                            \
+	    gv = (GV*)SvRV(self->tempfh);                                   \
+	else                                                                \
+	    gv = (GV*)self->tempfh;                                         \
+	do_close(gv, FALSE);                                                \
+	SvREFCNT_dec(self->tempfh);                                         \
+    }                                                                       \
+    self->tempfh = Nullsv;                                                  \
+} while (0)
+
 static void
-S_handle_error(pTHX_ char *file, atomic_err err)
+S_handle_error(pTHX_ char *what, char *file, atomic_err err)
 {
     char *errmsg = SvPV_nolen(get_sv("!", 1));
     switch (err) {
 	case ATOMIC_ERR_SUCCESS:
+	    break;
+	case ATOMIC_ERR_EMPTYBACKUPEXT:
+	    croak("Can't open %s '%s: \"\" used as the backup_ext", what, file);
+	    break;
+	case ATOMIC_ERR_CANTOPEN:
+	    croak("Can't open %s '%s': %s", what, file, errmsg);
+	    break;
+	case ATOMIC_ERR_CANTLOCK:
+	    croak("Can't lock %s '%s': %s", what, file, errmsg);
 	    break;
 	case ATOMIC_ERR_BADCLOSE:
 	    croak("error closing tempfile: %s", errmsg);
 	    break;
 	case ATOMIC_ERR_CANTLINK:
 	    croak("error creating the backup file: %s", errmsg);
+	    break;
+	case ATOMIC_ERR_CANTUNLINK:
+	    croak("error unlinking temporary file: %s", errmsg);
 	    break;
 	case ATOMIC_ERR_CANTMKDIR:
 	    croak("Error creating directory '%s': %s", file, errmsg);
@@ -77,10 +103,16 @@ S_handle_error(pTHX_ char *file, atomic_err err)
 	    croak("error creating temporary file: %s", errmsg);
 	    break;
 	case ATOMIC_ERR_NOTOWNER:
-	    croak("can't write to another user's file", errmsg);
+	    croak("Not owner of %s '%s'", what, file);
 	    break;
 	case ATOMIC_ERR_OPENEDREADABLE:
 	    croak("'%s' was not opened writable", file);
+	    break;
+	case ATOMIC_ERR_PATHTOOLONG:
+	    croak("File path exceeded %d bytes", PATH_MAX);
+	    break;
+	case ATOMIC_ERR_UNINITIALISED:
+	    croak("Can't open directory '%s': has not been initialised", file);
 	    break;
 	default:
 	    croak("unknown error '%i'", err);
@@ -133,36 +165,37 @@ new(ignored, dir, ...)
     PREINIT:
 	atomic_err	err;
 	atomicdir_ptr	self;
-	atomic_opts	opts;
+	atomic_opts	opts = ATOMIC_OPTS_INITIALIZER;
 	int i;
 	int create = 0;
     CODE:
-	Newz(NEWZ_CONST_INT, self, 1, atomicdir_t);
-
-	/* Defaults */
-	memset(&opts, 0, sizeof(opts));
-	opts.mode = ATOMIC_READ;
-	
 	/* Read options */
 	for (i = 2; i < items; i += 2) {
 	    SV *skey = ST(i);
 	    SV *sval = ST(i + 1);
 	    char *key = SvPV_nolen(skey);
+
 	    if (strEQ(key, "writable")) {
 		if (SvOK(sval) && SvTRUE(sval))
 		    opts.mode = ATOMIC_WRITE;
 	    }
 	    else if (strEQ(key, "create")) {
-		if (SvIOK(sval))
-		    create = (int)SvIV(sval);
+		create = (int)SvIV(sval);
 	    }
 	    else if (strEQ(key, "timeout")) {
-		if (SvIOK(sval))
-		    opts.timeout = (int)SvIV(sval);
+		opts.timeout = (int)SvIV(sval);
 	    }
 	    else if (strEQ(key, "rotate")) {
-		if (SvIOK(sval))
-		    opts.rotate = (int)SvIV(sval);
+		opts.rotate = (int)SvIV(sval);
+	    }
+	    else if (strEQ(key, "mode")) {
+		opts.cmode = (mode_t)SvIV(sval);
+	    }
+	    else if (strEQ(key, "owner")) {
+		opts.uid = (uid_t)SvIV(sval);
+	    }
+	    else if (strEQ(key, "group")) {
+		opts.gid = (gid_t)SvIV(sval);
 	    }
 	    else
 		croak("Unknown option '%s'", key);
@@ -175,41 +208,11 @@ new(ignored, dir, ...)
 		croak("Option create requires writable as well");
 	}
 
+	Newz(NEWZ_CONST_INT, self, 1, atomicdir_t);
 	err = atomic_opendir(&self->at, dir, &opts);
 	if (err != ATOMIC_ERR_SUCCESS) {
 	    Safefree(self);
-	    switch(err) {
-		case ATOMIC_ERR_CANTOPEN:
-		    croak("Can't open directory '%s': %s", dir,
-			    SvPV_nolen(get_sv("!", 1)));
-		    break;
-		case ATOMIC_ERR_CANTLOCK:
-		    croak("Can't lock directory '%s': %s", dir,
-			    SvPV_nolen(get_sv("!", 1)));
-		    break;
-		case ATOMIC_ERR_NOTOWNER:
-		    croak("Not owner of directory '%s'", dir); /* and not root */
-		    break;
-		case ATOMIC_ERR_NOTDIRECTORY:
-		    croak("'%s' is not a directory", dir);
-		    break;
-		case ATOMIC_ERR_CANTMKDIR:
-		    croak("Error creating '%s': %s", dir,
-			    SvPV_nolen(get_sv("!", 1)));
-		    break;
-		case ATOMIC_ERR_NOCURRENT:
-		    croak("Corrupt directory: missing 'current' symlink: %s",
-			    dir);
-		    break;
-		case ATOMIC_ERR_INVALIDCURRENT:
-		    croak("Corrupt directory: invalid 'current' symlink: %s",
-			    dir);
-		    break;
-		default:
-		    croak("Unknown error '%i': %s", err,
-			    SvPV_nolen(get_sv("!", 1)));
-		    break;
-	    }
+	    S_handle_error(aTHX_ "directory", dir, err);
 	}
 	RETVAL = self;
     OUTPUT:
@@ -241,6 +244,23 @@ current(self)
 	RETVAL
 
 SV*
+version(self, ...)
+	atomicdir_ptr self
+    PREINIT:
+	char buf[ATOMIC_VERSION_MAX_LEN];
+	int ix;
+	STRLEN len;
+    CODE:
+	if (items == 1)
+	    ix = atomic_currentdir_i(self->at);
+	else
+	    ix = SvIV(ST(1));
+	len = atomic_version_i(self->at, ix, buf);
+	RETVAL = newSVpvn(buf, len);
+    OUTPUT:
+	RETVAL
+
+SV*
 currentpath(self)
 	atomicdir_ptr self
     CODE:
@@ -267,12 +287,13 @@ scratchpath(self)
 	RETVAL
 
 void
-commit(self)
+commit(self, version=NULL)
 	atomicdir_ptr self
+	char *version
     PREINIT:
 	atomic_err err;
     CODE:
-	err = atomic_commitdir(self->at);
+	err = atomic_commitdir_version(self->at, version);
 	handle_dir_error(self, err);
 	self->at = NULL;
 
@@ -306,15 +327,11 @@ new(ignored, file, ...)
     PREINIT:
 	atomic_err	err;
 	atomic_ptr	self;
-	atomic_opts	opts;
+	atomic_opts	opts = ATOMIC_OPTS_INITIALIZER;
 	int i;
 	int create;
     CODE:
-	Newz(NEWZ_CONST_INT, self, 1, atomic_t);
-	memset(&opts, 0, sizeof(opts));
-
 	/* Defaults */
-	opts.mode = ATOMIC_READ;
 	create = 0;
 
 	/* Read options */
@@ -322,29 +339,37 @@ new(ignored, file, ...)
 	    SV *skey = ST(i);
 	    SV *sval = ST(i + 1);
 	    char *key = SvPV_nolen(skey);
+
 	    if (strEQ(key, "writable")) {
 		if (SvOK(sval) && SvTRUE(sval))
 		    opts.mode = ATOMIC_WRITE;
 	    }
 	    else if (strEQ(key, "create")) {
-		if (SvIOK(sval))
-		    create = (int)SvIV(sval);
+		create = (int)SvIV(sval);
 	    }
 	    else if (strEQ(key, "nolock")) {
-		if (SvIOK(sval))
-		    opts.noreadlock = (int)SvIV(sval);
+		opts.nolock = (int)SvIV(sval);
 	    }
 	    else if (strEQ(key, "timeout")) {
-		if (SvIOK(sval))
-		    opts.timeout = (int)SvIV(sval);
+		opts.timeout = (int)SvIV(sval);
 	    }
 	    else if (strEQ(key, "backup_ext")) {
-		if (SvPOK(sval))
-		    opts.backup_ext = SvPV_nolen(sval);
+		STRLEN len;
+		char *str = SvPV(sval, len);
+		if (len)
+		    opts.backup_ext = str;
 	    }
 	    else if (strEQ(key, "rotate")) {
-		if (SvIOK(sval))
-		    opts.rotate = (int)SvIV(sval);
+		opts.rotate = (int)SvIV(sval);
+	    }
+	    else if (strEQ(key, "mode")) {
+		opts.cmode = (mode_t)SvIV(sval);
+	    }
+	    else if (strEQ(key, "owner")) {
+		opts.uid = (uid_t)SvIV(sval);
+	    }
+	    else if (strEQ(key, "group")) {
+		opts.gid = (gid_t)SvIV(sval);
 	    }
 	    else
 		croak("Unknown option '%s'", key);
@@ -356,29 +381,12 @@ new(ignored, file, ...)
 	    else
 		croak("Option create requires writable as well");
 	}
-	if (opts.noreadlock && opts.mode != ATOMIC_READ)
-	    croak("Option nolock requires non-writable open mode");
 
+	Newz(NEWZ_CONST_INT, self, 1, atomic_t);
 	err = atomic_open(&self->at, file, &opts);
 	if (err != ATOMIC_ERR_SUCCESS) {
 	    Safefree(self);
-	    switch(err) {
-		case ATOMIC_ERR_CANTOPEN:
-		    croak("Can't open file '%s': %s", file,
-			    SvPV_nolen(get_sv("!", 1)));
-		    break;
-		case ATOMIC_ERR_CANTLOCK:
-		    croak("Can't lock file '%s': %s", file,
-			    SvPV_nolen(get_sv("!", 1)));
-		    break;
-		case ATOMIC_ERR_NOTOWNER:
-		    croak("Not owner of file '%s'", file); /* and not root */
-		    break;
-		default:
-		    croak("Unknown error '%i': %s", err,
-			    SvPV_nolen(get_sv("!", 1)));
-		    break;
-	    }
+	    S_handle_error(aTHX_ "file", file, err);
 	}
 	RETVAL = self;
     OUTPUT:
@@ -391,8 +399,18 @@ DESTROY(self)
 	if (self) {
 	    if (self->at)
 		atomic_close(self->at);
+	    free_tempfile(self);
 	    Safefree(self);
 	}
+
+void
+lock(self)
+	atomic_ptr self
+    PREINIT:
+	atomic_err err;
+    CODE:
+	err = atomic_lock(self->at);
+	handle_error(self, err);
 
 void
 close(self)
@@ -400,6 +418,7 @@ close(self)
     CODE:
 	atomic_close(self->at);
 	self->at = NULL;
+	free_tempfile(self);
 
 SV *
 slurp(self)
@@ -432,16 +451,53 @@ readline(self)
     OUTPUT:
 	RETVAL
 
-char *
+SV *
+readblock(self, blocklen)
+	atomic_ptr self
+        size_t blocklen
+    PREINIT:
+	char *block;
+	size_t len;
+	atomic_err err;
+    CODE:
+	err = atomic_readblock(self->at, blocklen, &block, &len);
+	handle_error(self, err);
+	if (block)
+	    RETVAL = newSVpvn(block, (STRLEN)len);
+	else
+	    RETVAL = &PL_sv_undef;
+    OUTPUT:
+	RETVAL
+
+int
 _tempfile(self)
 	atomic_ptr self
     PREINIT:
-	char *filename;
 	atomic_err err;
     CODE:
-	err = atomic_tempfile(self->at, NULL, &filename);
+	err = atomic_tempfile(self->at, &RETVAL, NULL);
 	handle_error(self, err);
-	RETVAL = filename;
+    OUTPUT:
+	RETVAL
+
+SV*
+_save_fh(self, fh=NULL)
+	atomic_ptr self
+	SV* fh
+    PREINIT:
+	atomic_err err;
+    CODE:
+	if (fh)
+	    self->tempfh = SvREFCNT_inc(fh);
+	if (!self->tempfh)
+	    XSRETURN_UNDEF;
+	/* We need to increment the refcount *again* for the returned copy,
+	 * because otherwise when the variable returned to perl goes out of
+	 * scope, it's *our* copy that's freed. I could use newSVsv(), but I'm
+	 * not sure if that correctly refcounts the file handle; i.e. it might
+	 * close the file as soon as the returned copy goes out of scope,
+	 * instead of when free_tempfile() is called. */
+	RETVAL = SvREFCNT_inc(self->tempfh);
     OUTPUT:
 	RETVAL
 
@@ -454,6 +510,7 @@ commit_tempfile(self)
 	err = atomic_commit_tempfile(self->at);
 	handle_error(self, err);
 	self->at = NULL;
+	free_tempfile(self);
 
 void
 commit_string(self, str)
@@ -468,6 +525,7 @@ commit_string(self, str)
 	err = atomic_commit_string(self->at, c_str, len);
 	handle_error(self, err);
 	self->at = NULL;
+	free_tempfile(self);
 
 void
 commit_fd(self, fd)
@@ -479,3 +537,4 @@ commit_fd(self, fd)
 	err = atomic_commit_fd(self->at, fd);
 	handle_error(self, err);
 	self->at = NULL;
+	free_tempfile(self);

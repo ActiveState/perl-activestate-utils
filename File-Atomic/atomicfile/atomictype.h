@@ -16,17 +16,21 @@ typedef struct {
     char *backup_ext;           /* what extension to append to backups */
     int rotate;                 /* how many backups to keep */
     int timeout;                /* how long (secs) to wait for lock */
-    int noreadlock;             /* if set, don't lock on read */
-#if 0
-    char *lockfile;             /* lock this file, rather than the original */
-#endif
+    int nolock;                 /* if set, atomic_open() doesn't lock */
+    uid_t uid;			/* user for newly created files */
+    gid_t gid;			/* group for newly created files */
+    mode_t cmode;		/* creat() mode for new files */
 } atomic_opts;
+
+#define ATOMIC_OPTS_INITIALIZER \
+	{ ATOMIC_READ, NULL, 0, 0, 0, (uid_t)-1, (gid_t)-1, (mode_t)0 }
 
 typedef enum {
     ATOMIC_ERR_SUCCESS=0,
     ATOMIC_ERR_BADCLOSE,
     ATOMIC_ERR_CANTOPEN,
     ATOMIC_ERR_CANTLINK,
+    ATOMIC_ERR_CANTUNLINK,
     ATOMIC_ERR_CANTLOCK,
     ATOMIC_ERR_CANTMMAP,
     ATOMIC_ERR_CANTREAD,
@@ -42,6 +46,9 @@ typedef enum {
     ATOMIC_ERR_CANTMKDIR,
     ATOMIC_ERR_NOCURRENT,
     ATOMIC_ERR_INVALIDCURRENT,
+    ATOMIC_ERR_UNINITIALISED,
+    ATOMIC_ERR_PATHTOOLONG,
+    ATOMIC_ERR_EMPTYBACKUPEXT,
     ATOMIC_ERR__LAST_ /* in case the C compiler can't handle trailing ',' */
 } atomic_err;
 

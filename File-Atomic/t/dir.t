@@ -3,13 +3,23 @@
 use strict;
 use Test;
 
-plan tests => 18;
+plan tests => 21;
 
 use ActiveState::Dir::Atomic;
 use File::Path;
 
 my $tmpdir  = "dir-$$";
 END { rmtree($tmpdir) }
+
+# Test that opening a nonexistent directory for read fails
+eval { ActiveState::Dir::Atomic->new($tmpdir) };
+ok($@, qr/^Can't open directory/);
+
+# Test that opening an empty directory for read fails
+mkdir($tmpdir) or die;
+eval { ActiveState::Dir::Atomic->new($tmpdir) };
+ok($@, qr/^Can't open directory/);
+rmdir($tmpdir) or die;
 
 {
     eval { ActiveState::Dir::Atomic->new($tmpdir, create => 1); };
@@ -25,6 +35,15 @@ END { rmtree($tmpdir) }
     $at = ActiveState::Dir::Atomic->new($tmpdir, writable => 1, create => 1);
     $at->commit;
     ok(-e "$tmpdir/current");
+
+    undef $at;
+    $at = ActiveState::Dir::Atomic->new($tmpdir, writable => 1, create => 1);
+    $at->commit("12345");
+
+    undef $at;
+    $at = ActiveState::Dir::Atomic->new($tmpdir, writable => 1);
+    ok($at->version, "12345");
+    $at->rollback(1);
 }
 
 # Make sure we don't leak any handles

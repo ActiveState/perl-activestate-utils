@@ -160,6 +160,14 @@ commit() is called. This croaks if the directory was not opened for writing.
 Returns the full path to the directory that will become the current directory
 if commit() is called. This croaks if the directory was not opened for writing.
 
+=item version()
+
+  my $version = $at->version;
+
+Returns the "version" of the directory. The version string is an optional
+parameter to commit(), and is intended to provide a more useful string than
+the directory index number.
+
 =item scan()
 
   my $num = $at->scan(\&callback);
@@ -177,6 +185,9 @@ invoked; however, if the callback is not provided, then C<scan()> returns the
 number of subdirectories.
 
 =item commit()
+
+  $at->commit;
+  $at->commit($version);
 
 Updates the F<ROOT/current> symbolic link to the next directory. The method
 will croak on failure or if the C<writable> option was not passed to the

@@ -3,14 +3,14 @@
 use strict;
 use Test;
 
-plan tests => 127;
+plan tests => 126;
 
 use ActiveState::File::Atomic;
 use File::Path;
 
 my $tmpdir  = "basic-$$";
 my $tmpfile = "$tmpdir/foo";
-my $glob    = "$tmpfile*";
+my $glob    = "$tmpdir/{.,}foo*";
 
 mkpath($tmpdir);
 END { rmtree($tmpdir) }
@@ -21,11 +21,9 @@ END { rmtree($tmpdir) }
     ok(!-e $tmpfile);
 
     my $at = ActiveState::File::Atomic->new($tmpfile, writable => 1, create => 1);
-    ok(-e $tmpfile);
+    ok(!-e $tmpfile); # no commit() yet
     undef($at);
-    ok(-e $tmpfile);  # XXX do we want this?
-    unlink($tmpfile);
-    ok(!-e $tmpfile);
+    ok(!-e $tmpfile); # no commit() yet
 
     $at = ActiveState::File::Atomic->new($tmpfile, writable => 1, create => 1);
     $at->commit_string("Hello, world\n");
@@ -52,7 +50,9 @@ for (1 .. 10) {
     while (defined ($_ = $at->readline)) {
 	print $wh "wh: $_" or die "error writing to tempfile: $!"
     }
-    ok(@{[glob($glob)]}, 2);
+
+    # There are 3 files: foo, .foo.lck, and .foo.RANDOM
+    ok(@{[glob($glob)]}, 3);
     $at->close;
     ok(@{[glob($glob)]}, 1);
 }

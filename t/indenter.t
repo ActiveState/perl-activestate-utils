@@ -3,10 +3,10 @@
 use strict;
 use Test;
 
-BEGIN { plan tests => 18 }
+BEGIN { plan tests => 19 }
 
 use ActiveState::Indenter;
-use ActiveState::Handy qw(cat);
+use ActiveState::Handy qw(cat cat_text);
 
 my $file = "test-$$";
 die "'$file' is in the way" if -e $file;
@@ -62,7 +62,7 @@ ok($i->depth, 0);
 
 close($f);
 
-ok(cat($file), <<'EOT2');
+my $expectedString = <<'EOT2';
 A
     B
 B
@@ -82,6 +82,9 @@ EOT
 D
 EOT2
 
+ok(cat_text($file), $expectedString);
+$expectedString =~ s/\n/\r\n/g if $^O eq 'MSWin32';
+ok(cat($file), $expectedString);
 unlink($file) || warn "Can't clean up '$file': $!";
 
 # try indenter with object instead of filehandle

@@ -93,7 +93,7 @@ ActiveState::StopWatch - Time code
 =head1 DESCRIPTION
 
 The ActiveState::StopWatch module provide functions that can be used
-to meassure the time spent by sections of code.  The following
+to measure the time spent by sections of code.  The following
 functions are provided:
 
 =over
@@ -103,7 +103,7 @@ functions are provided:
 =item start_watch( $w )
 
 Without argument this function creates a new watch object.  With
-argument it can restart a watch that has been stoppped after invoking
+argument it can restart a watch that has been stopped after invoking
 the stop_watch() function on it.  If the watch provided is not stopped
 then its state is not affected.
 

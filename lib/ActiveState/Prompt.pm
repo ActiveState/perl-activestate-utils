@@ -64,7 +64,45 @@ ASK:
 	    return $default;
 	}
 
-	my $ans = <STDIN>;
+	my $ans;
+	
+	# turn echo off
+	if ( $opt{noecho} )
+	{
+	    my $fd_stdin = fileno(STDIN);
+
+	    # grab POSIX at runtime
+	    sub ECHO; sub ECHOK; sub ICANON; sub VTIME; sub TCSANOW;
+	    require POSIX;
+	    POSIX->import(":termios_h");
+
+	    my $term     = POSIX::Termios->new();
+
+	    # Store current term settings, and turn echo off
+	    $term->getattr($fd_stdin);
+	    my $oterm    = $term->getlflag();
+	    my $echo     = ECHO | ECHOK | ICANON;
+	    my $noecho   = $oterm & ~$echo;
+	    $term->setlflag($noecho);
+	    $term->setcc(VTIME, 1);
+	    $term->setattr($fd_stdin, TCSANOW);
+
+	    $ans = <STDIN>;
+
+	    # Restore previous term settings
+	    $term->setlflag($oterm);
+	    $term->setcc(VTIME,0);
+	    $term->setattr($fd_stdin, TCSANOW);
+
+	    # We aren't echoing the user's return key, so print one
+	    # to ensure the next question is on a new line
+	    print "\n";
+	}
+	else # read normally
+	{
+	    $ans = <STDIN>;
+	}
+	
 	unless (defined $ans) {
 	    # Ctrl-D
 	    print "\n";
@@ -163,10 +201,10 @@ are recognized:
 
 The C<default> is returned if the user simply press return.  The
 default value is shown in brackets.  If no default is provided then no
-brackes are added to the question.
+brackets are added to the question.
 
 If C<trim_space> is TRUE, then any leading and trailing space in the
-anwer is trimmed off and any internal space is colapsed to a single
+anwer is trimmed off and any internal space is collapsed to a single
 space.
 
 The C<must_match> value is used to validate answers.  It can be either

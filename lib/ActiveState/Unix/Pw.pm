@@ -82,9 +82,9 @@ sub useradd {
             push(@cmd, "groups=" . join(',', grep defined, @$g));
         }
         else {
-            my $pg = shift @$g;
+            my ($pg, @og) = @$g;
             push(@cmd, "-g", $pg) if defined $pg;
-            push(@cmd, "-G", join(',', @$g)) if scalar @$g > 0;
+            push(@cmd, "-G", join(',', @og)) if scalar @og > 0;
         }
     }
 
@@ -242,11 +242,12 @@ sub su {
     # FreeBSD   /usr/bin        su - user -c "command args"
     # HP-UX     /usr/bin        su - user -c "command args"
     # AIX       /usr/bin        su - user "-c dir/command options"
+    my $silent = delete $opt{silent} ? '@' : '';
     if ($^O eq 'linux') {
-        push(@cmd, '/bin/su');
+        push(@cmd, "$silent/bin/su");
     }
     else {
-        push(@cmd, '/usr/bin/su');
+        push(@cmd, "$silent/usr/bin/su");
     }
 
     my $login = "-" if delete $opt{login};
@@ -270,7 +271,7 @@ sub su {
 
     _run('su', \%opt, \@cmd);
 }
-    
+
 1;
 
 __END__
@@ -422,7 +423,9 @@ The command to execute as the specified user.
 
 If true, makes the shell a login shell.
 
-=back
+=item silent
+
+If true, suppresses the command echo.
 
 =back
 

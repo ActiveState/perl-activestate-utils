@@ -11,10 +11,10 @@ sleep(1);
 my $times = stop_watch($w);
 print "$times\n";
 
-print "not " unless $times =~ /^r=1\./;
+print "not " unless $times =~ /^r=1[.s]/;
 print "ok 1\n";
 
-print "not " unless ActiveState::StopWatch::real_time($w) > 1;
+print "not " unless ActiveState::StopWatch::real_time($w) >= 1;
 print "ok 2\n";
 
 sleep(1);
@@ -24,7 +24,7 @@ start_watch($w);
 $times = ActiveState::StopWatch::read_watch($w);
 print "$times\n";
 
-print "not " unless $times =~ /^r=1\./;
+print "not " unless $times =~ /^r=1[.s]/;
 print "ok 3\n";
 
 print "not " if $times =~ /cu=/;

@@ -3,9 +3,11 @@
 use strict;
 use lib "./lib";
 
-print "1..13\n";
+print "1..15\n";
 
-use ActiveState::Install qw(install installed);
+use ActiveState::Install qw(install installed
+                            CFG_FORCE_OURS CFG_KEEP_THEIRS
+                            FILE_ABANDON FILE_ABANDON_MODIFIED);
 $ActiveState::Prompt::USE_DEFAULT = 1;
 
 my $t = "test-$$";
@@ -14,7 +16,7 @@ die if -e $t;
 # Clean up any old packages
 system("rm -rf .packages");
 
-# Try to install someting, this should work
+# Try to install something, this should work
 install(pkg => "Test-Lib",
 	ver => "0.1",
 	files => { "lib" => "$t" },
@@ -29,7 +31,10 @@ print "not " unless install(pkg => "Test-Lib",
 			    ver => "0.1",
 			    files => { "lib" => "$t" },
 			    etc => ".",
-			   ) == 0;
+			   ) == 0
+			   and -e "$t/ActiveState/Handy.pm"
+			   and ! -w _ ;
+#system("ls -l $t/ActiveState/Handy.pm");
 print "ok 2\n";
 
 # Let's remove a file and reinstall
@@ -39,11 +44,14 @@ print "not " unless install(pkg => "Test-Lib",
 			    ver => "0.1",
 			    files => { "lib" => "$t" },
 			    etc => ".",
-			    config_files => { "lib/ActiveState/Handy.pm" => 1, },
+			    config_files => {
+			        "lib/ActiveState/Handy.pm" => CFG_FORCE_OURS,
+			    },
 			    verbose => 3,
 			   ) == 2
 			   and -e "$t/ActiveState/Install.pm"
-			   and -e "$t/ActiveState/Handy.pm";
+			   and -w "$t/ActiveState/Handy.pm";
+#system("ls -l $t/ActiveState/Handy.pm");
 print "ok 3\n";
 
 # done with it
@@ -78,12 +86,12 @@ sub append_line {
 }
 
 my %cfg;
-for ("a".."f") {
+for ("a".."h") {
     mkdir("apkg/$_", 0755) || die;
     append_line("apkg/$_/c1");
     append_line("apkg/$_/c2");
-    $cfg{"apkg/$_/c1"} = 1;
-    $cfg{"apkg/$_/c2"} = 2;
+    $cfg{"apkg/$_/c1"} = CFG_FORCE_OURS;
+    $cfg{"apkg/$_/c2"} = CFG_KEEP_THEIRS;
 }
 
 # and then add some extra files for good measure
@@ -116,9 +124,9 @@ append_line("apkg/c/c1");
 append_line("apkg/c/c2");
 
 unlink("$t/d/c1");
-unlink("$t/d/c2");
 append_line("$t/d/c1");
-append_line("$t/d/c2");
+unlink("apkg/d/c2");
+delete $cfg{"apkg/d/c2"} || die;
 
 unlink("apkg/e/c1");
 unlink("apkg/e/c2");
@@ -137,8 +145,24 @@ unlink("$t/f/c2");
 mkdir("$t/f/c2", 0755) || die;
 append_line("$t/f/c2/foo");
 
+unlink("apkg/g/c1");
+delete $cfg{"apkg/g/c1"} || die;
+unlink("apkg/g/c2");
+delete $cfg{"apkg/g/c2"} || die;
+
+unlink("apkg/h/c1");
+delete $cfg{"apkg/h/c1"} || die;
+unlink("apkg/h/c2");
+delete $cfg{"apkg/h/c2"} || die;
+append_line("$t/h/c2");
 
 unlink("apkg/bar");
+push(@pkg, special_files => {
+                              "$t/d/c2" => FILE_ABANDON,
+                              "$t/e/c2" => FILE_ABANDON_MODIFIED,
+                              "$t/g/"   => FILE_ABANDON,
+                              "~/h/.*"   => FILE_ABANDON_MODIFIED,
+			    });
 
 # Try to reinstall on top of it
 # Then try to install it
@@ -146,7 +170,7 @@ install(@pkg);
 
 my $files = `cd $t && find . -print`;
 $files = join("", sort split(/^/, $files));
-#print $files;
+print $files;
 
 print "not " unless $files eq <<'EOT'; print "ok 6\n";
 .
@@ -166,7 +190,7 @@ print "not " unless $files eq <<'EOT'; print "ok 6\n";
 ./d/c2
 ./e
 ./e/c1.ppmdeleted
-./e/c2.ppmdeleted
+./e/c2
 ./empty_dir
 ./f
 ./f/c1
@@ -176,6 +200,11 @@ print "not " unless $files eq <<'EOT'; print "ok 6\n";
 ./f/c2.ppmdist
 ./f/c2/foo
 ./foo
+./g
+./g/c1
+./g/c2
+./h
+./h/c2
 EOT
 
 # XXX should also look into some of the files to make sure they
@@ -187,7 +216,7 @@ my $pkg = installed(pkg => "Test-Lib", etc => ".");
 print "not " unless $pkg;
 print "ok 7\n";
 
-print "not " unless $pkg->files == 13;
+print "not " unless $pkg->files == 12;
 print "ok 8\n";
 
 print "not " if $pkg->changed("$t/foo");
@@ -216,5 +245,33 @@ print "ok 12\n";
 print "not " unless $file eq "$t/q/link";
 print "ok 13\n";
 
+# test that non-dangling symlinks are installed OK
+mkdir("$t/t");
+mkdir("$t/u");
+system("touch $t/t/monkey");
+symlink("monkey", "$t/t/link");
+install(pkg => "link3",
+        ver => "0.1",
+        files => { "$t/t/link" => "$t/u/link" ,
+                   "$t/t/monkey" => "$t/u/monkey" },
+        etc => ".",
+        );
+print "not " unless -l "$t/u/link" && -f "$t/u/link";
+print "ok 14\n";
+# now test dangling symlinks
+mkdir("$t/r");
+mkdir("$t/s");
+symlink("monkey", "$t/r/link");
+install(pkg => "link2",
+        ver => "0.1",
+        files => { "$t/r/link" => "$t/s/link" },
+        etc => ".",
+        );
+print "not " unless -l "$t/s/link";
+print "ok 15\n";
+
+
 # clean up all the mess
-system("rm -rf apkg $t");
+END {
+    system("rm -rf apkg $t");
+}
