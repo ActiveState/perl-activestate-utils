@@ -2,7 +2,7 @@ package ActiveState::Prompt;
 
 use strict;
 
-our $VERSION = '0.01';
+our $VERSION = '1.00';
 
 use base 'Exporter';
 our @EXPORT_OK = qw(prompt yes enter);

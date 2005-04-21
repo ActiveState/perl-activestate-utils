@@ -12,6 +12,13 @@ $ActiveState::Prompt::USE_DEFAULT = 1;
 
 my $t = "test-$$";
 die if -e $t;
+my $tlink = "link-$$";
+if ($^O =~ /win32/i) {
+    $tlink = $t;
+}
+else {
+    symlink($t, $tlink) or die;
+}
 
 # Clean up any old packages
 system("rm -rf .packages");
@@ -97,19 +104,21 @@ for ("a".."h") {
 # and then add some extra files for good measure
 append_line("apkg/foo");
 system("chmod +x apkg/foo");
+mkdir("bpkg");
+symlink("a", "bpkg/alink") || die "Can't create symlink 'bpkg/alink': $!";
 append_line("apkg/bar");
 mkdir("apkg/empty_dir");
 
 # Then try to install it
-my @pkg = (pkg => "Test-Lib",
+my %pkg = (pkg => "Test-Lib",
 	   ver => "0.1",
-	   files => { "apkg" => $t },
+	   files => { "apkg" => $t, "bpkg" => $t, },
 	   config_files => \%cfg,
 	   etc => ".",
 	   preserve_mtime => 1,
 	  );
        
-install(@pkg);
+install(%pkg);
 
 # edit some of the files
 append_line("$t/a/c1");
@@ -157,16 +166,17 @@ delete $cfg{"apkg/h/c2"} || die;
 append_line("$t/h/c2");
 
 unlink("apkg/bar");
-push(@pkg, special_files => {
-                              "$t/d/c2" => FILE_ABANDON,
-                              "$t/e/c2" => FILE_ABANDON_MODIFIED,
-                              "$t/g/"   => FILE_ABANDON,
-                              "~/h/.*"   => FILE_ABANDON_MODIFIED,
-			    });
+$pkg{special_files} = {
+                              "$t/d/c2"     => FILE_ABANDON,
+                              "$tlink/e/c2" => FILE_ABANDON_MODIFIED,
+                              "/g/"         => FILE_ABANDON,
+                              "~/h/.*"      => FILE_ABANDON_MODIFIED,
+		      };
+$pkg{files}{bpkg} = $tlink;
 
 # Try to reinstall on top of it
 # Then try to install it
-install(@pkg);
+install(%pkg);
 
 my $files = `cd $t && find . -print`;
 $files = join("", sort split(/^/, $files));
@@ -177,6 +187,7 @@ print "not " unless $files eq <<'EOT'; print "ok 6\n";
 ./a
 ./a/c1
 ./a/c2
+./alink
 ./b
 ./b/c1
 ./b/c2
@@ -216,7 +227,7 @@ my $pkg = installed(pkg => "Test-Lib", etc => ".");
 print "not " unless $pkg;
 print "ok 7\n";
 
-print "not " unless $pkg->files == 12;
+print "not " unless $pkg->files == 13;
 print "ok 8\n";
 
 print "not " if $pkg->changed("$t/foo");
@@ -273,5 +284,5 @@ print "ok 15\n";
 
 # clean up all the mess
 END {
-    system("rm -rf apkg $t");
+    system("rm -rf apkg bpkg .packages $t $tlink");
 }

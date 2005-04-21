@@ -234,6 +234,23 @@ sub p4_dirs {
 }
 
 sub p4_files {
+    if (ref($_[0]) eq "HASH") {
+        my $opts = shift;
+        if ($opts->{detailed}) {
+            my @files = p4_cmd("files @_");
+            my @detailed;
+            foreach (@files) {
+                next unless /^([^#]+)#(\d+) - (\w+) change (\d+) \((\w+)\)$/;
+                push @detailed, { name => $1,
+                                  rev => $2,
+                                  action => $3,
+                                  num => $4,
+                                  type => $5,
+                                };
+            }
+            return wantarray ? @detailed : \@detailed;
+        }
+    }
     p4_cmd("files @_");
 }
 
@@ -414,10 +431,17 @@ sub new {
 	initialized => 0,
 	submitted => 0,
 	pathspecs => \@_,
+        subopts => "",
 	fake => $fake,
 	p4user => $info->{user_name},
 	p4client => $info->{client_name},
     }, ref($self) || $self;
+}
+
+sub option {
+    my ($o, $opts) = @_;
+    die "Must call option before object is initialized" if $o->{initialized};
+    $o->{subopts} .= $opts;
 }
 
 sub DESTROY {
@@ -494,7 +518,7 @@ END
 sub _init {
     my $o = shift;
     return if $o->{initialized};
-    my $cmd = $o->{fake} ? "> $ENV{HOME}/cowardly" : "| p4 submit -i";
+    my $cmd = $o->{fake} ? "> $ENV{HOME}/cowardly" : "| p4 submit $o->{subopts} -i";
     open ($o->{filehandle}, $cmd)
       or die "can't open pipe to 'p4 submit -i': $!";
     CORE::print {$o->{filehandle}} <<END;
@@ -667,6 +691,48 @@ which, in turn, is equivalent to
 Refreshes the files in the client workspace. Does not sync to the latest
 revision in the repository -- it just refreshes whatever version of the files
 were last checked out.
+
+=head2 p4_files()
+
+   p4_files(@files);
+
+Returns a list of named or matching wild card specification.
+
+If the first argument is a hashref, it will be examined for options and 
+not passed to p4.  The following keys can be used for options:
+
+=over 4
+
+=item detailed
+
+If true, p4_files() will return a list of hashrefs containing the 
+following keys:
+
+=over 
+
+=item name
+
+The depot name of the file.
+
+=item rev
+
+The current revision of the file.
+
+=item type
+
+The current file type of the file.
+
+=item action
+
+The last change action of the file.
+
+=item num
+
+The last change number of the file.
+
+=back
+
+=back
 
 =head2 p4_changes()
 
@@ -920,5 +986,18 @@ explicitly. So code like this also works:
        my $h = p4_submit(@paths);
        $h->print("\tThis is a bad change description.\n");
    }
+
+=item 8
+
+option()
+
+Specifies options to use when calling C<p4 submit>.
+
+Example:
+
+  my $h = p4_submit(@paths);
+  $h->option("-r");
+  $h->print($desc)
+  ...
 
 =back

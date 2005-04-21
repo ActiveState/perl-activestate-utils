@@ -4,7 +4,7 @@ package ActiveState::Unix::Crontab;
 # man crontab
 
 use strict;
-use ActiveState::Handy qw(run);
+use ActiveState::Run qw(run);
 
 use base 'Exporter';
 our @EXPORT_OK = qw(cron_edit cron_add cron_format cron_install

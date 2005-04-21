@@ -8,12 +8,17 @@
 
 #include "atomicfile.h"
 
+#ifndef O_LARGEFILE
+#  define O_LARGEFILE 0
+#endif
+
 extern char *atomic_strdup(char *);
 
 /* Forward */
 static atomic_err S_lock(int fd, atomic_opts *);
 static atomic_err S_save_backups(char *fname, int rotate, char *backup_exit);
 static void S_revert(atomic_file *self);
+static int S_safefd(int fd);
 
 static atomic_opts s_default_opts = ATOMIC_OPTS_INITIALIZER;
 
@@ -116,8 +121,11 @@ atomic_lock(atomic_file *self)
 
     /* For readers, we can short-circuit a lot of kruft, so do it here. */
     if (self->opts.mode == ATOMIC_READ) {
-	if ((self->fd_read = open(self->dest, O_RDONLY)) < 0)
+	if ((self->fd_read = S_safefd(open(self->dest,
+					   O_RDONLY|O_LARGEFILE))) < 0)
+	{
 	    return ATOMIC_ERR_CANTOPEN;
+	}
 	fstat(self->fd_read, &self->sbuf);
 	return ATOMIC_ERR_SUCCESS;
     }
@@ -148,7 +156,7 @@ atomic_lock(atomic_file *self)
     sprintf(lock, "%.*s.%s.lck",
 	    basename - self->dest, self->dest, basename);
 
-    if ((tfd = mkstemp(temp)) < 0) {
+    if ((tfd = S_safefd(mkstemp(temp))) < 0) {
 	free(temp);
 	free(lock);
 	return ATOMIC_ERR_NOTEMPFILE;
@@ -181,7 +189,7 @@ atomic_lock(atomic_file *self)
 
 	    /* We must open O_RDWR because fcntl() doesn't support exclusive
 	     * locks on a file open only for read. */
-	    if ((wfd = open(lock, O_RDWR)) < 0) {
+	    if ((wfd = S_safefd(open(lock, O_RDWR|O_LARGEFILE))) < 0) {
 		if (errno != ENOENT) {
 		    err = ATOMIC_ERR_CANTLOCK;
 		    goto lock_failed;
@@ -217,7 +225,7 @@ atomic_lock(atomic_file *self)
     me = geteuid();
     mygroup = getegid();
 
-    if ((self->fd_read = open(self->dest, O_RDONLY)) < 0)
+    if ((self->fd_read = S_safefd(open(self->dest, O_RDONLY|O_LARGEFILE))) < 0)
     {
 	if (self->opts.mode != ATOMIC_CREATE) {
 	    S_revert(self);
@@ -508,7 +516,7 @@ atomic_commit_tempfile(atomic_file *self)
     ntmpf = atomic_strdup(self->temp);
     for (i = strlen(self->temp) - 6; ntmpf[i]; i++)
 	ntmpf[i] = 'X';
-    if ((ntfd = mkstemp(ntmpf)) < 0) {
+    if ((ntfd = S_safefd(mkstemp(ntmpf))) < 0) {
 	free(ntmpf);
 	S_revert(self);
 	return ATOMIC_ERR_NOTEMPFILE;
@@ -607,6 +615,22 @@ S_link(char *from, char *to)
 
     errno = save_errno;
     return ATOMIC_ERR_CANTLINK;
+}
+
+static int
+S_safefd(int fd)
+{
+#if defined(__sun__) && !defined(_LP64)
+    /* stdio needs all the fds < 256 */
+    if (fd >= 0 && fd < 256) {
+	int newfd = fcntl(fd, F_DUPFD, 256);
+	if (newfd >= 0) {
+	    close(fd);
+	    fd = newfd;
+	}
+    }
+#endif
+    return fd;
 }
 
 static int

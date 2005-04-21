@@ -28,6 +28,7 @@ my $ver;
 my $config_file;  # a hash reference
 my $special_file; # a hash reference
 my $special_pat;  # a hash reference
+my $special_ino;  # a hash reference
 my @rollback_actions;
 my @commit_actions;
 my %md5_old;
@@ -65,6 +66,7 @@ sub install {
     $config_file = delete $args{config_files} || {};
     $special_file = delete $args{special_files} || {};
     $special_pat = {};
+    $special_ino = {};
     for my $c (keys %$config_file) {
 	die "Configuration file $c is not in package"
 	    unless -f $c;
@@ -78,7 +80,10 @@ sub install {
 	}
 	# entries that end with "/" are treated as directories
 	elsif ($d =~ m,/\z,) {
-	    $special_pat->{$d} = [qr/^\Q$d\E/, delete $special_file->{$d}];
+	    $special_pat->{$d} = [qr/\Q$d\E/, delete $special_file->{$d}];
+	}
+	else {
+	    $special_ino->{join(":", (lstat _)[0,1])} = $d if lstat $d;
 	}
     }
 
@@ -193,8 +198,10 @@ sub install {
 	# delete old files that are not in the new package
 	for my $fname (keys %md5_old) {
 	    next if $md5_new{$fname};
-	    next unless -e $fname;
-	    next if $inode_new{join(":", (stat _)[0,1])};  # safety net
+	    next unless lstat $fname;
+	    # files/links that have just been installed should
+	    # never be deleted
+	    next if $inode_new{join(":", (lstat _)[0,1])};
 
 	    # abandon file?
 	    my $abandon = _special_file($fname) || 0;
@@ -249,8 +256,17 @@ sub install {
 sub _special_file {
     my $fname = shift;
     return $special_file->{$fname} if exists $special_file->{$fname};
+    my $nfname;
+    if (lstat $fname) {
+	$nfname = $special_ino->{join(":", (lstat _)[0,1])};
+	return $special_file->{$nfname}
+	    if defined($nfname) and exists $special_file->{$nfname};
+    }
+
     for my $d (keys %$special_pat) {
 	return $special_pat->{$d}[1] if $fname =~ $special_pat->{$d}[0];
+	return $special_pat->{$d}[1]
+	    if defined($nfname) and $nfname =~ $special_pat->{$d}[0];
     }
     return undef;
 }
@@ -305,6 +321,13 @@ sub _copy_link {
 
     $md5_new{$to} = Digest::MD5::md5_hex($link);
     $summary{link}++;
+
+    # we remember the inode of installed links
+    # unlike _copy_file(), the link is actually only installed
+    # at commit time, so we remember inode for both $to and $tmplink
+    for my $l ($to, $tmplink) {
+	$inode_new{join(":", (lstat _)[0,1])} = $to if lstat $l;
+    }
 }
 
 sub _copy_file {
@@ -431,7 +454,7 @@ sub _copy_file {
     }
 
     # we remember the inode of installed files
-    $inode_new{join(":", (stat $to)[0,1])}++;
+    $inode_new{join(":", (stat $to)[0,1])} = $to;
 }
 
 sub _ppmsave {

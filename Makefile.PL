@@ -3,7 +3,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     NAME	 => 'ActiveState::Utils',
-    VERSION	 => '1.19',
+    VERSION	 => '1.22',
     PREREQ_PM    => { 'Time::HiRes' => 1 },
     ($] ge '5.006' ? (
 	AUTHOR	 => 'ActiveState Corporation',

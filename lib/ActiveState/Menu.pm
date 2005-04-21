@@ -1,7 +1,7 @@
 package ActiveState::Menu;
 
 use strict;
-our $VERSION = '0.02';
+our $VERSION = '1.00';
 
 use base 'Exporter';
 our @EXPORT_OK = qw(menu prompt yes);

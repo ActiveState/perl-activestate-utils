@@ -1,7 +1,8 @@
 package ActiveState::Unix::Pw;
 
 use strict;
-use ActiveState::Handy qw(run);
+use ActiveState::Run qw(run);
+use Cwd;
 
 use base 'Exporter';
 our @EXPORT_OK;
@@ -10,14 +11,15 @@ my %cmd;
 my %commands = (
         useradd => 'useradd',
         userdel => 'userdel',
+        usermod => 'usermod',
         groupadd => 'groupadd',
         groupdel => 'groupdel',
         su       => 'su',
 );
 
 if ($^O eq 'aix') {
-    @commands{qw(useradd userdel groupadd groupdel)} =
-              qw(mkuser  rmuser  mkgroup  rmgroup);
+    @commands{qw(useradd userdel usermod groupadd groupdel)} =
+              qw(mkuser  rmuser  chuser  mkgroup  rmgroup);
 }
 
 for my $c (keys %commands) {
@@ -32,7 +34,9 @@ if (-x "/usr/sbin/pw") {
 }
 else {
     for my $v (values %cmd) {
-        if ($v->{cmd}[0] eq 'mkuser' or $v->{cmd}[0] eq 'mkgroup') {
+        if ($v->{cmd}[0] eq 'mkuser' or 
+            $v->{cmd}[0] eq 'chuser' or
+            $v->{cmd}[0] eq 'mkgroup') {
             substr($v->{cmd}[0], 0, 0) = "/usr/bin/";
         }
         else {
@@ -41,60 +45,50 @@ else {
     }
 }
 
-# XXX this whole thing ought to be generalized and totally table driven
-
 sub useradd {
     my %opt = @_;
     my @cmd = @{$cmd{useradd}{cmd}};
-    
+    return ActiveState::Unix::Darwin::Pw::useradd(\%opt) if $^O eq 'darwin';
 
-    if (exists $opt{comment}) {
-	my $c = delete $opt{comment};
-        if ($^O eq 'aix') {
-            push(@cmd, "gecos=$c");
-        }
-        else {
-            push(@cmd, "-c", $c); 
-        }
-    }
+    # default arguments
+    my %arg = ( comment => '-c',
+                home => '-d',
+                create_home => sub { '-m' },
+                uid => '-u',
+              );
+    # os specific arguments
+    my %osarg = ( aix => { comment => sub { "gecos=$_[0]" },
+                           home => sub { "home=$_[0]" },
+                           create_home => sub { "" },
+                           group => sub { "groups="
+                                          . join(',', grep defined, @{$_[0]}) },
+			   uid => sub { "" },
+                         },
+                  freebsd => { user => sub { "-n", $_[0] },
+                             },
+                );
+                           
+    foreach my $o (qw(comment home create_home uid group user )) {
+        my $v = delete $opt{$o};
+        die "user option is mandatory for useradd" if $o eq 'user' and !$v;
+        next unless defined $v;
+            
+        # use the default arg if it exists and the value  
+        my @foo = ($arg{$o}, $v);
+        @foo = ($arg{$o}->($v)) if ref($arg{$o}) eq 'CODE';
 
-    if (my $h = delete $opt{home}) {
-        if ($^O eq 'aix') {
-            push(@cmd, "home=$h");
+        # default group args are a little trickier...
+        if ($o eq 'group') {
+            $v = [$v] unless ref($v) eq 'ARRAY';
+            my ($pg, @og) = @$v;
+            @foo = defined $pg ? ('-g', $pg) : ();
+            push @foo, '-G', join(',', @og) if @og;
         }
-        else {
-            push(@cmd, "-d", $h);
-        }
-    }
 
-    if (delete $opt{create_home}) {
-        if ($^O eq 'aix') {
-            # ignore for aix - always create
-        }
-        else {
-            push(@cmd, "-m");
-        }
-    }
+        # os specific option
+        @foo = ($osarg{$^O}{$o}->($v)) if exists $osarg{$^O}{$o};
 
-    if (my $g = delete $opt{group}) {
-	$g = [$g] unless ref($g) eq 'ARRAY';
-        if ($^O eq 'aix') {
-            push(@cmd, "groups=" . join(',', grep defined, @$g));
-        }
-        else {
-            my ($pg, @og) = @$g;
-            push(@cmd, "-g", $pg) if defined $pg;
-            push(@cmd, "-G", join(',', @og)) if scalar @og > 0;
-        }
-    }
-
-    # must be last
-    if (my $u = delete $opt{user}) {
-	push(@cmd, "-n") if $^O eq "freebsd";
-	push(@cmd, $u);
-    }
-    else {
-	die "user option is mandatory for useradd";
+        push @cmd, grep {defined and length} @foo;
     }
 
     _run('useradd', \%opt, \@cmd);
@@ -106,7 +100,8 @@ sub userdel {
     my $user;
     my $home;
     my $norun = $opt{_norun};
-    
+    return ActiveState::Unix::Darwin::Pw::userdel(\%opt) if $^O eq 'darwin';
+
     if ($^O eq 'aix') {
         if (delete $opt{remove_home} and $opt{user}) {
             # find user's home dir for AIX
@@ -152,10 +147,47 @@ sub userdel {
     $rc;
 }
 
+sub usermod {
+    my %opt = @_;
+    my @cmd = @{$cmd{usermod}{cmd}};
+
+    # default arguments
+    my %arg = ( home => '-d',
+                login => '-l',
+              );
+    # os specific arguments
+    my %osarg = ( aix => { home => sub { "home=$_[0]" },
+                           # chuser doesn't have options to do this.  The
+                           # workaround is to create a new user with the same
+                           # uid, and then delete the old user
+                           login => sub { die "Not available on AIX" },
+                         },
+                  freebsd => { user => sub { "-n", $_[0] } },
+                );
+                           
+    foreach my $o (qw(home login user)) {
+        my $v = delete $opt{$o};
+        die "user option is mandatory for usermod" if $o eq 'user' and !$v;
+        next unless defined $v;
+            
+        # use the default arg if it exists and the value  
+        my @foo = ($arg{$o}, $v);
+        @foo = ($arg{$o}->($v)) if ref($arg{$o}) eq 'CODE';
+
+        # os specific option
+        @foo = ($osarg{$^O}{$o}->($v)) if exists $osarg{$^O}{$o};
+
+        push @cmd, grep defined, @foo;
+    }
+
+    _run('usermod', \%opt, \@cmd);
+}
+
 sub groupadd {
     unshift(@_, "group") if @_ == 1;
     my %opt = @_;
     my @cmd = @{$cmd{groupadd}{cmd}};
+    return ActiveState::Unix::Darwin::Pw::groupadd(\%opt) if $^O eq 'darwin';
 
     if (exists $opt{gid}) {
 	my $gid = int(delete $opt{gid});
@@ -195,6 +227,7 @@ sub groupdel {
     unshift(@_, "group") if @_ == 1;
     my %opt = @_;
     my @cmd = @{$cmd{groupdel}{cmd}};
+    return ActiveState::Unix::Darwin::Pw::groupdel(\%opt) if $^O eq 'darwin';
 
     if (my $g = delete $opt{group}) {
 	push(@cmd, $g);
@@ -240,6 +273,7 @@ sub su {
     # Linux     /bin            su - user -c "command args"
     # Solaris   /usr/bin        su - user -c "command args"
     # FreeBSD   /usr/bin        su - user -c "command args"
+    # Darwin    /usr/bin        su - user -c "command args"
     # HP-UX     /usr/bin        su - user -c "command args"
     # AIX       /usr/bin        su - user "-c dir/command options"
     my $silent = delete $opt{silent} ? '@' : '';
@@ -252,13 +286,10 @@ sub su {
 
     my $login = "-" if delete $opt{login};
 
-    if (my $u = delete $opt{user}) {
-        push(@cmd, $login) if $login;
-        push(@cmd, $u);
-    }
-    else {
-        die "user option is mandatory for su" unless $u;
-    }
+    my $u = delete $opt{user};
+    die "user option is mandatory for su" unless $u;
+    push(@cmd, $login) if $login;
+    push(@cmd, $u);
 
     if (my $cmd = delete $opt{command}) {
         if ($^O eq 'aix') {
@@ -269,7 +300,138 @@ sub su {
         }
     }
 
-    _run('su', \%opt, \@cmd);
+    my $cur_dir = getcwd();
+    my $user_home = getpwnam $u;
+    chdir $user_home if $user_home;
+    my $rc;
+    eval {
+        $rc = _run('su', \%opt, \@cmd);
+    };
+    my $err = $@;
+    chdir $cur_dir if $user_home and $cur_dir;
+    die $err if $err;
+    return $rc;
+}
+
+package ActiveState::Unix::Darwin::Pw;
+
+my $niutil = "/usr/bin/niutil";
+my $nidump = "/usr/bin/nidump";
+my $passwd = "/usr/bin/passwd";
+
+sub _run {
+    my ($f, $opt, $cmd) = @_;
+    warn "$f: @$cmd\n";
+    return ActiveState::Unix::Pw::_run(@_)
+}
+
+sub useradd {
+    my $opt = shift;
+
+    my ($user, $comment, $home, $create_home, $group) = delete @$opt{qw(
+	 user   comment   home   create_home   group
+    )};
+
+    if ($user) {
+	my @cmd;
+
+	# Find the next free UID:
+	chomp(my $uid = `$nidump passwd . | cut -d: -f3 | sort -n | tail -1`);
+	die "WHOA: can't set uid for $user" unless defined $uid && $uid >= 0;
+	++$uid;
+
+	_run('useradd', $opt, [$niutil, '-create', '.', "/users/$user"]);
+	_run('useradd', $opt,
+	    [$niutil, '-createprop', '.', "/users/$user", 'passwd', '*']);
+	_run('useradd', $opt,
+	    [$niutil, '-createprop', '.', "/users/$user", uid => $uid]);
+	_run('useradd', $opt,
+	    [$niutil, '-createprop', '.', "/users/$user", shell => '/bin/bash']);
+    }
+    else {
+	die "user option is mandatory for useradd";
+    }
+
+    my $pg;
+    if ($group) {
+	my @og;
+	$group = [$group] unless ref($group) eq 'ARRAY';
+	($pg, @og) = @$group;
+
+	# Set the primary group id
+	if (defined $pg) {
+	    defined(my $gid = getgrnam($pg))
+		or die "useradd: invalid group $pg";
+	    _run('useradd', $opt,
+		[$niutil, '-createprop', '.', "/users/$user", gid => $gid]);
+	}
+
+	# Add this user to the other groups
+	for my $g (@og) {
+	    defined (my $gid = getgrnam($g))
+		or die "useradd: invalid group $g";
+	    _run('useradd', $opt,
+		[$niutil, '-appendprop', '.', "/groups/$g", users => $user]);
+	}
+    }
+    else {
+	die "group option is mandatory for useradd on darwin";
+    }
+
+    if ($comment) {
+	_run('useradd', $opt,
+	    [$niutil, '-createprop','.', "/users/$user", realname => $comment]);
+    }
+
+    $home ||= "/Users/$user";
+    _run('useradd', $opt,
+	[$niutil, '-createprop', '.', "/users/$user", home => $home]);
+
+    if ($create_home) {
+	mkdir($home) or die "useradd: can't mkdir $home: $!";
+	_run('useradd', $opt, ['/usr/sbin/chown', '-R', "$user:$group", $home]);
+	_run('useradd', $opt, ['/bin/chmod', '755', $home]);
+    }
+}
+
+sub userdel {
+    my $opt = shift;
+    die;
+}
+
+sub groupadd {
+    my $opt = shift;
+
+    delete $opt->{unique}; # not supported in Mac OS X
+
+    my ($group, $gid) = delete @$opt{qw(
+	 group   gid
+    )};
+
+    unless (defined $gid) {
+	# Find the next free GID:
+	chomp($gid = `$nidump group . | cut -d: -f3 | sort -n | tail -1`);
+	die "WHOA: can't set gid for $group" unless defined $gid && $gid >= 0;
+	++$gid;
+    }
+
+    if ($group) {
+	_run('groupadd', $opt, [$niutil, '-create', '.', "/groups/$group"]);
+    }
+    else {
+	die "group option is mandatory for groupadd";
+    }
+
+    _run('groupadd', $opt,
+	[$niutil, '-createprop', '.', "/groups/$group", gid => $gid]);
+
+    _run('groupadd', $opt, ["\@$nidump group . >/dev/null"]);
+    sleep 1;
+}
+
+sub groupdel {
+    my $opt = shift;
+    die;
 }
 
 1;
@@ -360,6 +522,26 @@ The username to delete.  Mandatory.
 
 Boolean; if TRUE then the home directory will be deleted as well as
 the user information.
+
+=back
+
+=item usermod( %opts )
+
+The following options are recognized:
+
+=over
+
+=item user
+
+The username to modify.  Mandatory.
+
+=item home
+
+The new home directory of the user.
+
+=item login
+
+The new login name of the user.
 
 =back
 
