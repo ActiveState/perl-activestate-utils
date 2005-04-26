@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 use base 'Exporter';
 our @EXPORT_OK = qw(path_list find_prog realpath);
 
-use constant IS_WIN32 => $^O eq "Win32";
+use constant IS_WIN32 => $^O eq "MSWin32";
 use File::Spec::Functions qw(catfile rel2abs);
 use File::Basename qw(dirname basename);
 use Cwd ();
