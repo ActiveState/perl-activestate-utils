@@ -1,5 +1,13 @@
 #!/usr/bin/perl -w
 
+BEGIN {
+    use ActiveState::Path;
+    unless (ActiveState::Path::find_prog("p4")) {
+	print "1..0 # Skipped: no p4 executable found\n";
+	exit;
+    }
+}
+
 use strict;
 use Test;
 BEGIN { plan tests => 8 }
