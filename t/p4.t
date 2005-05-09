@@ -6,6 +6,11 @@ BEGIN {
 	print "1..0 # Skipped: no p4 executable found\n";
 	exit;
     }
+
+    if (($ENV{LOGNAME} || getlogin() || getpwuid($<) || "gecko") eq "gecko") {
+	print "1..0 # Skipped: gecko not a p4 user\n";
+	exit;
+    }
 }
 
 use strict;
