@@ -1,3 +1,10 @@
+BEGIN {
+    if ($^O eq "MSWin32") {
+	print "1..0 # Skipped: ActiveState::Unix::Network does not work on Windows\n";
+	exit 0;
+    }
+}
+
 print "1..5\n";
 
 use ActiveState::Unix::Network qw(interfaces mask_off num2ip);

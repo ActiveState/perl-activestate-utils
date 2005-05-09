@@ -1,3 +1,10 @@
+BEGIN {
+    if ($^O eq "MSWin32") {
+	print "1..0 # Skipped: ActiveState::Unix::Pw does not work on Windows\n";
+	exit 0;
+    }
+}
+
 use strict;
 use ActiveState::Unix::Pw qw(useradd userdel usermod groupadd groupdel su);
 use Test qw(ok plan);

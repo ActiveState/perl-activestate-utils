@@ -1,5 +1,12 @@
 #!perl -w
 
+BEGIN {
+    if ($^O eq "MSWin32") {
+	print "1..0 # Skipped: ActiveState::DiskUsage does not work on Windows\n";
+	exit 0;
+    }
+}
+
 print "1..1\n";
 
 use strict;

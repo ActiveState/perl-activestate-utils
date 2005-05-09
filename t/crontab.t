@@ -1,5 +1,12 @@
 #!/usr/bin/perl -w
 
+BEGIN {
+    if ($^O eq "MSWin32") {
+	print "1..0 # Skipped: ActiveState::Unix::Crontab does not work on Windows\n";
+	exit 0;
+    }
+}
+
 use strict;
 use Test qw(plan ok);
 

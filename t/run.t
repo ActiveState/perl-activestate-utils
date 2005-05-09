@@ -1,5 +1,12 @@
 #!perl -w
 
+BEGIN {
+    if ($^O eq "MSWin32") {
+	print "1..0 # Skipped: ActiveState::Run test does not work on Windows\n";
+	exit 0;
+    }
+}
+
 print "1..28\n";
 
 use ActiveState::Run qw(run shell_quote decode_status);
