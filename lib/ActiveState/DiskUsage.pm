@@ -20,10 +20,10 @@ sub _du
 
     my @s = lstat($f);
     return 0 unless @s;
-    return 0 if -l _;
+    return 0 if $^O ne "MSWin32" && -l _;
 
     if (-d _) {
-	$total += $s[12] * $blocksize;
+	$total += $^O eq "MSWin32" ? 0 : $s[12] * $blocksize;
 	if (opendir(my $d, $f)) {
 	    my @files = readdir($d);
 	    closedir($d);
@@ -37,7 +37,7 @@ sub _du
 
     # plain file, don't count hard linked files multiple times
     return 0 if $s[1] && $seen{"$s[0]:$s[1]"}++;
-    return $s[12] * $blocksize;
+    return $^O eq "MSWin32" ? $s[7] : $s[12] * $blocksize;
 }
 
 1;
@@ -62,6 +62,14 @@ The return value of the du() function is the number of bytes
 allocated.
 
 The du() function is not exported by default.
+
+=head1 BUGS
+
+On Windows, this function only sum up the size of the files found at
+the given location.  This number will be lower than the actual
+allocation as it does not take block allocation and space consumed by
+the directories themselves into account.  The L<Win32::DirSize> module
+might give more accurate results on this platform.
 
 =head1 COPYRIGHT
 
