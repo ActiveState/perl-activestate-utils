@@ -11,6 +11,11 @@ BEGIN {
 	print "1..0 # Skipped: gecko not a p4 user\n";
 	exit;
     }
+
+    unless (gethostbyname("scythe")) {
+        print "1..0 # Skipped: Must be able to access scythe\n";
+	exit;
+    }
 }
 
 use strict;
