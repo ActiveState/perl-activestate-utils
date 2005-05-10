@@ -1,12 +1,5 @@
 #!perl -w
 
-BEGIN {
-    if ($^O eq "MSWin32") {
-	print "1..0 # Skipped: ActiveState::Run test does not work on Windows\n";
-	exit 0;
-    }
-}
-
 print "1..28\n";
 
 use ActiveState::Run qw(run shell_quote decode_status);
@@ -16,12 +9,12 @@ $| = 1;
 
 run("\@echo ok 1");
 
-run("-perl", "-e", 'print "ok 2\n"; exit 1');
+run("-perl", "-e", "print qq(ok 2\\n); exit 1");
 
 eval {
-   run("perl -e 'exit 42'");
+   run('perl -e "exit 42"');
 };
-print "not " unless $@ && $@ eq "Command exits with 42:\n  perl -e 'exit 42'\n  stopped at @{[__FILE__]} line @{[__LINE__-2]}\n";
+print "not " unless $@ && $@ eq "Command exits with 42:\n  perl -e \"exit 42\"\n  stopped at @{[__FILE__]} line @{[__LINE__-2]}\n";
 print "ok 3\n";
 
 eval {
@@ -29,7 +22,7 @@ eval {
    run("not-there i hope");
 };
 $! = Errno::ENOENT;
-print "not " unless $@ && $@ eq "Command \"not-there\" failed: $!:\n  not-there i hope\n  stopped at @{[__FILE__]} line @{[__LINE__-3]}\n";
+print "not " unless $@ && $@ eq ($^O eq "MSWin32" ? "Command exits with 1:" : "Command \"not-there\" failed: $!:") . "\n  not-there i hope\n  stopped at @{[__FILE__]} line @{[__LINE__-3]}\n";
 print "ok 4\n";
 
 print "not " unless shell_quote("a") eq "a";
@@ -190,7 +183,10 @@ sub WXXX_ok {
     return !$err;
 }
 
-
+if ($^O eq "MSWin32") {
+    print "ok $_ # skip Windows is not POSIX enough\n" for 20 .. 28;
+}
+else {
 system($^X, "-e", "exit 0");
 print "not " unless WXXX_ok(0);
 print "ok 20\n";
@@ -228,3 +224,4 @@ print "not " unless WXXX_ok(undef, 6);
 print "ok 28\n";
 
 # XXX anyway to test the stop status?
+}
