@@ -11,7 +11,7 @@ sub interfaces {
 	my $ifconfig = "$path/ifconfig";
 	next unless -x $ifconfig;
 	if ( $^O eq "hpux" ) {
-	    $ifconfig = "$path/lanscan -i | cut -f 1 -d \" \" | xargs -l $ifconfig";
+	    $ifconfig = "netstat -in |  tail -n +2 | cut -f 1 -d \" \" | xargs -l $ifconfig";
 	}
 	else {
 	    $ifconfig .= " -a";
