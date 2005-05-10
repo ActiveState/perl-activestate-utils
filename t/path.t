@@ -7,6 +7,9 @@ plan tests => 7;
 use ActiveState::Path qw(find_prog path_list realpath);
 
 use File::Spec::Functions qw(catfile file_name_is_absolute);
+use Config qw(%Config);
+
+$ENV{PATH} .= "$Config{path_sep}$Config{binexp}";  # make sure perldoc is on PATH
 
 ok(find_prog("perldoc"));
 ok(file_name_is_absolute(find_prog("perldoc")));
