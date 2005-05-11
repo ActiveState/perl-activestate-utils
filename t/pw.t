@@ -9,7 +9,14 @@ use strict;
 use ActiveState::Unix::Pw qw(useradd userdel usermod groupadd groupdel su);
 use Test qw(ok plan);
 
-BEGIN { plan tests => 11 }
+BEGIN { 
+    if ($^O eq 'darwin') {
+        print "1..0 #skip: ",
+              "Implementation not completed on Darwin (bug 38751)";
+        exit;
+    } 
+    plan tests => 11
+}
 
 my %opts = (_norun=>1);
 

@@ -7,8 +7,12 @@ use ActiveState::Handy qw(add cat iso_date run xml_esc xml_clean ceil
 $| = 1;
 
 ok(cat("MANIFEST") =~ m,ActiveState/Handy,);
-ok(iso_date(2000,1,1), "2000-01-01");
-ok(iso_date(1011985293), "2002-01-25");
+
+{
+    local $ENV{TZ} = 'UTC';
+    ok(iso_date(2000,1,1), "2000-01-01");  
+    ok(iso_date(1011985293), "2002-01-25");
+}
 
 ok(add(), 0);
 ok(add(1), 1);
