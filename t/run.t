@@ -9,12 +9,12 @@ $| = 1;
 
 run("\@echo ok 1");
 
-run("-perl", "-e", "print qq(ok 2\\n); exit 1");
+run("-$^X", "-e", "print qq(ok 2\\n); exit 1");
 
 eval {
-   run('perl -e "exit 42"');
+   run($^X . ' -e "exit 42"');
 };
-print "not " unless $@ && $@ eq "Command exits with 42:\n  perl -e \"exit 42\"\n  stopped at @{[__FILE__]} line @{[__LINE__-2]}\n";
+print "not " unless $@ && $@ eq "Command exits with 42:\n  $^X -e \"exit 42\"\n  stopped at @{[__FILE__]} line @{[__LINE__-2]}\n";
 print "ok 3\n";
 
 eval {
