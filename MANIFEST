@@ -43,6 +43,8 @@ lib/ActiveState/Unix/ProcInfo.pm
 lib/ActiveState/Unix/Pw.pm
 lib/ActiveState/UTF8.pm
 lib/ActiveState/UTF8/File.pm
+lib/ActiveState/X11TestServer.pm
+lib/ActiveState/X11TestServer/Apache.pm
 Makefile.PL
 MANIFEST
 menu.pl
