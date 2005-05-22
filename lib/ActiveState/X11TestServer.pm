@@ -75,13 +75,16 @@ use base qw(ActiveState::X11TestServer::Impl);
 use IPC::Open3;
 use File::Spec;
 use POSIX ":sys_wait_h";
-use List::Util qw(shuffle);
 use Sys::Hostname;
 
 #We try local display 1 .. local in random order
 sub displays {
     my ($class, $args) = @_;
-    return shuffle 1 .. $args->{local};
+    #Randomize
+    return map { $_->[1] }
+           sort {$a->[0] <=> $b->[0] }
+           map { [ rand() => $_ ] }
+           1 .. $args->{local};
 }
 
 sub instance {
@@ -170,12 +173,15 @@ sub DESTROY {
 #Good old shared, already running X11
 package ActiveState::X11TestServer::Impl::Remote;
 use base qw(ActiveState::X11TestServer::Impl);
-use List::Util qw(shuffle);
 
 sub instance {
     my ($class, $args) = @_;
-
-    my $display = (shuffle @{$args->{remote}})[0];
+    #Randomize
+    my @displays = map { $_->[1] }
+           sort {$a->[0] <=> $b->[0] }
+           map { [ rand() => $_ ] }
+           @{$args->{remote}};
+    my $display = $displays[0];
     my $self = bless {display => $display}, $class;
     return $self;
 }
