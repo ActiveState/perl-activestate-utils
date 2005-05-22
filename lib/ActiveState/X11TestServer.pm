@@ -1,22 +1,29 @@
 package ActiveState::X11TestServer;
 
 use strict;
-use YAML;
-
-my %defaults = %{Load(<<EOF)};
-  debug: 0
-  managed: 
-    - http://plow.activestate.com/X11TestServer
-  remote:
-    - plow.activestate.com:5
-    - plow.activestate.com:6
-    - spanner.activestate.com:0
-  local: 20
-  order:
-    - local
-    - managed
-    - remote
-EOF
+my %defaults = (
+    debug   => 0,
+    managed => [
+        qw(
+          http://plow.activestate.com/X11TestServer
+          )
+    ],
+    remote => [
+        qw(
+          plow.activestate.com:5
+          plow.activestate.com:6
+          spanner.activestate.com:0
+          )
+    ],
+    local => 20,
+    order => [
+        qw(
+          local
+          managed
+          remote
+          )
+    ],
+);
 
 sub new {
     my $class = shift;
