@@ -4,6 +4,7 @@ print "1..28\n";
 
 use ActiveState::Run qw(run shell_quote decode_status);
 use Errno;
+use Config;
 
 $| = 1;
 
@@ -146,6 +147,16 @@ sub WXXX_ok {
         if ($s{WTERMSIG} ne WTERMSIG($?)) {
 	    warn "WTERMSIG disagreement";
             $err++;
+	    if ($^O eq "aix" && $Config{osvers} =~ /^(\d+)\./ && $1 >= 5) {
+		# AIX-5.1 have moved the TERMSIG bits up and that makes this
+		# test fail because perl truncates $? to 16 bits.  See discussion
+		# that leads up to the ${^CHILD_ERROR_NATIVE} patch for bleadperl.
+		# http://www.xray.mpe.mpg.de/mailing-lists/perl5-porters/2005-05/msg00440.html
+		#
+		# Since ActiveState::Utils still give the right answer, and only
+		# POSIX::WTERMSIG is affected, don't fail here because of this.
+		$err--;
+	    }
         }
         if (!defined $termsig) {
 	    warn "signaled";
