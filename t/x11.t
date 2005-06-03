@@ -36,10 +36,15 @@ eval {
     order => [qw(local)],
   );
 };
-ok !$@;
-ok $x11;
-ok $x11 && $x11->display;
-ok glx_ok($x11); 
+my $no_local;
+if ($@ =~ /find a way to provide a X server/) {
+  $no_local = "No local X11 Server binary";
+}
+
+skip ($no_local, !$@);
+skip ($no_local, $x11);
+skip ($no_local, $x11 && $x11->display);
+skip ($no_local, glx_ok($x11));
 }
 
 #Managed test
