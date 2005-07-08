@@ -6,7 +6,7 @@ use ActiveState::File::Atomic;
 $| = 1;
 print "1..1\n";
 
-my $iters = 50;
+my $iters = 8;
 my $file = "writers-$$";
 unlink $file;
 

@@ -5,7 +5,7 @@ use ActiveState::File::Atomic;
 
 $| = 1;
 
-my $iters = 50;
+my $iters = 8;
 print "1..$iters\n";
 my $file = "writers-$$";
 my $parent = $$;
