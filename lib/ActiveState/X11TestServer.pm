@@ -150,6 +150,8 @@ sub instance {
         my $url     = $base . "/$VERSION/get";
         my $display = get($url);
         next unless $display;
+        #Make sure returned display is sane
+        next unless $display =~ /:[0-9.]+$/;
         chomp $display;
         print STDERR "Managed display = $display\n";
         if ($display) {
