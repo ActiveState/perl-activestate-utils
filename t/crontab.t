@@ -1,4 +1,8 @@
 #!/usr/bin/perl -w
+BEGIN {
+  print "1..0 # Skipped: Crontab testing unreliable & destructive (bug 39805)\n";
+  exit 0;
+}
 
 BEGIN {
     if ($^O eq "MSWin32") {
