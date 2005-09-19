@@ -19,7 +19,6 @@ WriteMakefile(
 
 sub MY::libscan {
     my($self, $path) =@_;
-    print "scan $path\n";
     return '' if $path =~ /\.pl$/;
     return '' if $path =~ /X11TestServer|UTF8/;
     return '' if $^O eq "MSWin32" && $path =~ /Unix/;
