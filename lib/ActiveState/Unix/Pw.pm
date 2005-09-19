@@ -461,7 +461,7 @@ following special arguments are recognized by all functions:
 =item _norun
 
 Instead of feeding commands to the run() function (see
-L<ActiveState::Handy>) the commands to run are returned as a string.
+L<ActiveState::Run>) the commands to run are returned as a string.
 
 =item _nocroak
 
@@ -619,4 +619,4 @@ Copyright (C) 2003 ActiveState Corp.  All rights reserved.
 
 =head1 SEE ALSO
 
-L<ActiveState::Handy>
+L<ActiveState::Run>

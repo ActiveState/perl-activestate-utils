@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "atomicfile.h"
 
@@ -178,6 +180,10 @@ atomic_lock(atomic_file *self)
 	    break;
 	}
 	else if (errno != EEXIST) {
+	    if (self->opts.debug & ATOMIC_DEBUG_TRACE)
+		fprintf(stderr,
+			"atomicfile: link('%s','%s') failed [%s]\n",
+			temp, lock, strerror(errno));
 	    err = ATOMIC_ERR_CANTLOCK;
 	    goto lock_failed;
 	}
@@ -191,6 +197,10 @@ atomic_lock(atomic_file *self)
 	     * locks on a file open only for read. */
 	    if ((wfd = S_safefd(open(lock, O_RDWR|O_LARGEFILE))) < 0) {
 		if (errno != ENOENT) {
+		    if (self->opts.debug & ATOMIC_DEBUG_TRACE)
+			fprintf(stderr,
+				"atomicfile: open('%s',O_RDWR) failed [%s]\n",
+				lock, strerror(errno));
 		    err = ATOMIC_ERR_CANTLOCK;
 		    goto lock_failed;
 		}
@@ -206,6 +216,10 @@ atomic_lock(atomic_file *self)
 	    {
 		/* stale lock, delete */
 		if (unlink(lock) < 0) {
+		    if (self->opts.debug & ATOMIC_DEBUG_TRACE)
+			fprintf(stderr,
+				"atomicfile: unlink('%s') failed [%s]\n",
+				lock, strerror(errno));
 		    err = ATOMIC_ERR_CANTLOCK;
 		    goto lock_failed;
 		}
@@ -521,12 +535,12 @@ atomic_commit_tempfile(atomic_file *self)
 	S_revert(self);
 	return ATOMIC_ERR_NOTEMPFILE;
     }
-    if ((S_lock(ntfd, &self->opts)) != ATOMIC_ERR_SUCCESS) {
+    if ((err = S_lock(ntfd, &self->opts)) != ATOMIC_ERR_SUCCESS) {
 	unlink(ntmpf);
 	free(ntmpf);
 	S_revert(self);
 	close(ntfd);
-	return ATOMIC_ERR_CANTLOCK;
+	return err;
     }
     if (rename(ntmpf, self->lock) < 0) {
 	unlink(ntmpf);
@@ -719,6 +733,52 @@ S_lock(int fd, atomic_opts *o)
 {
     struct flock l;
 
+    if (o->debug & ATOMIC_DEBUG_STRICT) {
+	pid_t parentpid = getpid();
+	pid_t childpid;
+
+	/* XXX need to fork because F_GETLK is useless for recursion
+	 * detection within the same process. :-( */
+	childpid = fork();
+	if (childpid == 0) {
+	    l.l_type = F_WRLCK;
+	    l.l_whence = 0;
+	    l.l_start = 0;
+	    l.l_len = 0; /* whole file */
+	    l.l_pid = 0;
+
+	    if (fcntl(fd, F_GETLK, &l) == -1) {
+		if (o->debug & ATOMIC_DEBUG_TRACE)
+		    fprintf(stderr,
+			    "atomicfile: fcntl(%d,F_GETLK) failed [%s]\n",
+			    fd, strerror(errno));
+		_exit(1);
+	    }
+
+	    /* XXX this needs a hostname or l_sysid check as well to
+	     * be safe on NFS. */
+	    if (l.l_type != F_UNLCK && l.l_pid == parentpid)
+		_exit(2);
+
+	    _exit(0);
+	}
+	else if (childpid != -1) {
+	    int status;
+	    if (waitpid(childpid, &status, 0) == childpid
+		&& WIFEXITED(status))
+	    {
+		if (WEXITSTATUS(status) == 1)
+		    return ATOMIC_ERR_CANTLOCK;
+		if (WEXITSTATUS(status) == 2)
+		    return ATOMIC_ERR_RECURSIVELOCK;
+	    }
+	}
+	else {
+	    /* this is just best effort strictness, so we don't
+	     * complain if fork() fails */
+	}
+    }
+
     l.l_type = F_WRLCK;
     l.l_whence = 0;
     l.l_start = 0;
@@ -741,5 +801,8 @@ S_lock(int fd, atomic_opts *o)
 	if (ret == 0)
 	    return ATOMIC_ERR_SUCCESS;
     }
+    if (o->debug & ATOMIC_DEBUG_TRACE)
+	fprintf(stderr, "atomicfile: fcntl(%d,F_SETLK) failed [%s]\n",
+		fd, strerror(errno));
     return ATOMIC_ERR_CANTLOCK;
 }

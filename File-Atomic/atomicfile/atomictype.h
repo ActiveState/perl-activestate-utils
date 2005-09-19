@@ -11,6 +11,12 @@ typedef enum {
     ATOMIC_CREATE
 } atomic_file_mode;
 
+typedef enum {		/* bit flags */
+    ATOMIC_DEBUG_NONE	= 0x00,
+    ATOMIC_DEBUG_STRICT	= 0x01,
+    ATOMIC_DEBUG_TRACE	= 0x02
+} atomic_debug_flags;			
+
 typedef struct {
     atomic_file_mode mode;      /* whether to open read or read/write */
     char *backup_ext;           /* what extension to append to backups */
@@ -20,10 +26,11 @@ typedef struct {
     uid_t uid;			/* user for newly created files */
     gid_t gid;			/* group for newly created files */
     mode_t cmode;		/* creat() mode for new files */
+    atomic_debug_flags debug;	/* additional debug flags */
 } atomic_opts;
 
 #define ATOMIC_OPTS_INITIALIZER \
-	{ ATOMIC_READ, NULL, 0, 0, 0, (uid_t)-1, (gid_t)-1, (mode_t)0 }
+	{ ATOMIC_READ, NULL, 0, 0, 0, (uid_t)-1, (gid_t)-1, (mode_t)0, 0 }
 
 typedef enum {
     ATOMIC_ERR_SUCCESS=0,
@@ -48,6 +55,7 @@ typedef enum {
     ATOMIC_ERR_INVALIDCURRENT,
     ATOMIC_ERR_UNINITIALISED,
     ATOMIC_ERR_PATHTOOLONG,
+    ATOMIC_ERR_RECURSIVELOCK,
     ATOMIC_ERR_EMPTYBACKUPEXT,
     ATOMIC_ERR__LAST_ /* in case the C compiler can't handle trailing ',' */
 } atomic_err;

@@ -1,7 +1,7 @@
 package ActiveState::Unix::Network;
 use strict;
 use warnings;
-use ActiveState::Handy qw(decode_status);
+use ActiveState::Run qw(decode_status);
 use base 'Exporter';
 our @EXPORT_OK = qw(interfaces mask_off num2ip);
 

@@ -29,11 +29,11 @@ sub start_watch {
 }
 
 sub read_watch {
-    my @before = @{shift(@_)};
+    my @w = @{shift(@_)};
 
-    my @t = (time, times);
+    my @t = @w > @LABELS ? @w[@LABELS .. $#w] : (time, times);
     for (@t) {
-	$_ -= shift @before;
+	$_ -= shift @w;
     }
 
     # drop child times if they are 0

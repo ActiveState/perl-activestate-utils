@@ -4,6 +4,7 @@ use strict;
 use base qw(DynaLoader);
 
 our $VERSION = '1.01';
+our $DEBUG = $ENV{AS_FILE_ATOMIC_DEBUG} || 0;
 
 ActiveState::File::Atomic->bootstrap($VERSION);
 
@@ -135,6 +136,25 @@ is used. To simply append the rotation number, specify an empty
 C<backup_ext>. Rotation numbers are always left-padded with zeros if
 C<rotate> is specified as 10 or greater.  This ensures that the files
 sort correctly.
+
+=item debug
+
+A bitmask that can specify one or more internal flags to specify
+troubleshooting functionality.  The following bits are currently
+supported:
+
+    0x0001   strict - recursive lock attempts will produce errors
+             (additional strictures may be introduced in future)
+
+    0x0002   trace  - more information will be spit out of stderr
+             in case of errors or other unusual conditions
+
+Defaults to $ENV{AS_FILE_ATOMIC_DEBUG} or 0.
+
+The 'strict' implementation is currently rather heavy-weight
+(it calls fork()).  It may also falsely detect recursive lock
+attempts by processes running on different hosts that lock the
+same file on a distributed filesystem such as NFS.
 
 =back
 

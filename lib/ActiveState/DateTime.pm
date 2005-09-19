@@ -2,7 +2,7 @@ package ActiveState::DateTime;
 
 use strict;
 use base 'Exporter';
-use POSIX;
+use Time::Local;
 our @EXPORT_OK = qw(is_leap_year days_in_month check_date month_name_short month_name_long gmt_offset);
     
 my %months_short = (
@@ -79,7 +79,22 @@ sub month_name_long {
 }
 
 sub gmt_offset {
-    return POSIX::strftime("%z", gmtime());
+    my ($sec, $min, $hour, $mday, $mon, $year) = localtime();
+    my $localtime = timelocal($sec, $min, $hour, $mday, $mon, $year);
+    my $gmtime = timegm($sec, $min, $hour, $mday, $mon, $year);
+    my $offset = $gmtime - $localtime;
+    my $hours = int($offset / 3600);
+    my $remainder = $offset % 3600;
+    my $minutes = int($remainder / 60);
+    my $gmt_offset;
+    # Take into account the zero offset from GMT
+    if (($hours == 0) && ($minutes == 0)) {
+       	$gmt_offset = '+0000';
+    }
+    else {
+        $gmt_offset = sprintf("%.2d%.2d", $hours, $minutes);
+    }
+    return $gmt_offset;
 }
 
 1;

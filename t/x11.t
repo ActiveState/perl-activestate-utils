@@ -7,6 +7,11 @@ unless (-x $glxinfo) {
   exit;
 }
 
+unless (gethostbyname("plow.activestate.com")) {
+  print "1..0 # skip: Must be able to access plow\n";
+  exit;
+}
+
 plan tests => 13;
 
 use strict;

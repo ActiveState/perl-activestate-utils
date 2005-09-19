@@ -1,6 +1,6 @@
 abstract: Internal ActiveState utility modules
 name: ActiveState-Utils
-version: 1.22
+version: 1.23
 author: ActiveState <support@activestate.com>
 dont_build: 
   - yes

@@ -7,8 +7,10 @@ BEGIN {
     }
 }
 
-print "1..5\n";
+use Test qw(plan ok);
+plan tests => 6;
 
+use strict;
 use ActiveState::StopWatch;
 
 my $w = start_watch();
@@ -16,26 +18,26 @@ my $w = start_watch();
 sleep(1);
 
 my $times = stop_watch($w);
-print "$times\n";
+#print "$times\n";
 
-print "not " unless $times =~ /^r=1[.s]/;
-print "ok 1\n";
+ok($times =~ /^r=1[.s]/);
 
-print "not " unless ActiveState::StopWatch::real_time($w) >= 1;
-print "ok 2\n";
+ok(ActiveState::StopWatch::real_time($w) >= 1);
 
 sleep(1);
+
+my $times2 = read_watch($w);
+#print "$times2\n";
+ok($times, $times2);
 
 start_watch($w);
 
 $times = ActiveState::StopWatch::read_watch($w);
-print "$times\n";
+#print "$times\n";
 
-print "not " unless $times =~ /^r=1[.s]/;
-print "ok 3\n";
+ok($times =~ /^r=1[.s]/);
 
-print "not " if $times =~ /cu=/;
-print "ok 4\n";
+ok($times !~ /cu=/);
 
 # do some work in a child
 my $cuser = (times)[2];
@@ -47,7 +49,6 @@ do {
 use ActiveState::StopWatch qw(read_watch);
 
 $times = read_watch($w);
-print "$times\n";
+#print "$times\n";
 
-print "not " unless $times =~ /cu=/;
-print "ok 5\n";
+ok($times =~ /cu=/);

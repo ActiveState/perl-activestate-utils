@@ -111,6 +111,9 @@ S_handle_error(pTHX_ char *what, char *file, atomic_err err)
 	case ATOMIC_ERR_PATHTOOLONG:
 	    croak("File path exceeded %d bytes", PATH_MAX);
 	    break;
+	case ATOMIC_ERR_RECURSIVELOCK:
+	    croak("Attempt to recursively lock %s '%s'", what, file);
+	    break;
 	case ATOMIC_ERR_UNINITIALISED:
 	    croak("Can't open directory '%s': has not been initialised", file);
 	    break;
@@ -167,8 +170,16 @@ new(ignored, dir, ...)
 	atomicdir_ptr	self;
 	atomic_opts	opts = ATOMIC_OPTS_INITIALIZER;
 	int i;
-	int create = 0;
+	int create;
+	SV *dbg;
     CODE:
+	/* Defaults */
+	create = 0;
+
+	dbg = get_sv("ActiveState::File::Atomic::DEBUG", FALSE);
+	if (dbg)
+	    opts.debug = SvIV(dbg);
+
 	/* Read options */
 	for (i = 2; i < items; i += 2) {
 	    SV *skey = ST(i);
@@ -196,6 +207,9 @@ new(ignored, dir, ...)
 	    }
 	    else if (strEQ(key, "group")) {
 		opts.gid = (gid_t)SvIV(sval);
+	    }
+	    else if (strEQ(key, "debug")) {
+		opts.debug = SvIV(sval);
 	    }
 	    else
 		croak("Unknown option '%s'", key);
@@ -330,9 +344,14 @@ new(ignored, file, ...)
 	atomic_opts	opts = ATOMIC_OPTS_INITIALIZER;
 	int i;
 	int create;
+	SV *dbg;
     CODE:
 	/* Defaults */
 	create = 0;
+
+	dbg = get_sv("ActiveState::File::Atomic::DEBUG", FALSE);
+	if (dbg)
+	    opts.debug = SvIV(dbg);
 
 	/* Read options */
 	for (i = 2; i < items; i += 2) {
@@ -370,6 +389,9 @@ new(ignored, file, ...)
 	    }
 	    else if (strEQ(key, "group")) {
 		opts.gid = (gid_t)SvIV(sval);
+	    }
+	    else if (strEQ(key, "debug")) {
+		opts.debug = SvIV(sval);
 	    }
 	    else
 		croak("Unknown option '%s'", key);
