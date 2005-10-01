@@ -8,7 +8,6 @@ use base 'Exporter';
 our @EXPORT_OK = qw(path_list find_prog is_abs_path abs_path join_path rel_path unsymlinked realpath);
 
 use constant IS_WIN32 => $^O eq "MSWin32";
-use File::Spec::Functions qw(catfile);
 use File::Basename qw(dirname basename);
 use Cwd ();
 use Carp ();
@@ -19,7 +18,7 @@ my $PATH_SEP    = IS_WIN32 ? "\\" : "/";
 
 sub path_list {
     require Config;
-    my @list = split /$Config::Config{path_sep}/o, $ENV{PATH}, -1;
+    my @list = split /\Q$Config::Config{path_sep}/o, $ENV{PATH}, -1;
     if (IS_WIN32) {
         s/"//g for @list;
         @list = grep length, @list;
@@ -35,19 +34,24 @@ sub path_list {
 
 sub find_prog {
     my $name = shift;
-    if ($name =~ $ABS_PATH_RE) {
-        return -x $name  && -f _ ? $name : undef;
-    }
+    return _find_prog($name) if $name =~ $PATH_SEP_RE;
+
     # try to locate it in the PATH
     for my $dir (path_list()) {
-        my $file = catfile($dir, $name);
-        #print STDERR "XXX $file\n";
-        return $file if -x $file && -f _;
-        if (IS_WIN32) {
-            for my $ext (qw(bat exe com cmd)) {
-                return "$file.$ext" if -f "$file.$ext";
-            }
-        }
+        if (defined(my $file = _find_prog(_join_path($dir, $name)))) {
+	    return $file;
+	}
+    }
+    return undef;
+}
+
+sub _find_prog {
+    my $file = shift;
+    return $file if -x $file && -f _;
+    if (IS_WIN32) {
+	for my $ext (qw(bat exe com cmd)) {
+	    return "$file.$ext" if -f "$file.$ext";
+	}
     }
     return undef;
 }
@@ -157,7 +161,7 @@ sub realpath {
     return Cwd::realpath($path) if -d _;
 
     $path = _unsymlinked($path) if -l _;
-    return catfile(Cwd::realpath(dirname($path)), basename($path));
+    return _join_path(Cwd::realpath(dirname($path)), basename($path));
 }
 
 sub _unsymlinked {
@@ -208,10 +212,6 @@ This functions differs from realpath() by only removing "." or ".."
 segments at the beginning of $path and by only resolving the
 symlinks needed to process the ".." segments correctly.  The
 realpath() function also requires the file at $path to exist.
-
-This function returns the same value as:
-
-   join_path(do { require Cwd; Cwd::cwd() }, $path)
 
 =item find_prog( $name )
 

@@ -92,5 +92,6 @@ if ($Config{d_symlink}) {
     rmtree($dir, 1);
 }
 else {
-    skip("No symlinks") for 1..11;
+    # the 1 is so old Test.pm's will accept this skip
+    skip("no symlinks", 1) for 1..11;
 }
