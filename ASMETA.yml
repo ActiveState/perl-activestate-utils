@@ -2,7 +2,5 @@ abstract: Internal ActiveState utility modules
 name: ActiveState-Utils
 version: 1.23
 author: ActiveState <support@activestate.com>
-dont_build: 
-  - yes
 requires:
     Time::HiRes: 1.0
