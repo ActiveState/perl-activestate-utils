@@ -1,6 +1,11 @@
 #!/usr/bin/perl -w
 
 BEGIN {
+    print "1..0 # Skipped: Module not installed by default\n";
+    exit;
+}
+
+BEGIN {
     use ActiveState::Path;
     unless (ActiveState::Path::find_prog("p4")) {
 	print "1..0 # Skipped: no p4 executable found\n";

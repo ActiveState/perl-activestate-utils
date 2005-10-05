@@ -1,5 +1,10 @@
 #!perl -w
 
+BEGIN {
+    print "1..0 # Skipped: Module not installed by default\n";
+    exit;
+}
+
 use Test qw(ok plan);
 
 plan tests => 9;
