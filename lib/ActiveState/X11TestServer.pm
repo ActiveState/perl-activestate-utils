@@ -169,6 +169,7 @@ sub DESTROY {
     my $self = shift;
     my $url  =
       $self->{url} . "/$VERSION/release?display=$self->{display}";
+    local $@;
     get($url);
 }
 
