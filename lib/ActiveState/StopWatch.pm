@@ -89,7 +89,7 @@ ActiveState::StopWatch - Time code
  # restart it
  start_watch($w);
  print stop_watch($w);
- 
+
 =head1 DESCRIPTION
 
 The ActiveState::StopWatch module provide functions that can be used
