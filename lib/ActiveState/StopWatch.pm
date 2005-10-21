@@ -129,8 +129,8 @@ argument.
 
 =item $r = real_time( $w )
 
-This function returns the real time passed during the time the watch
-has been running.
+This function returns the number of seconds of real time passed during
+the time the watch has been running.
 
 =back
 
