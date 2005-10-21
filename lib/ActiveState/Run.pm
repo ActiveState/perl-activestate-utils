@@ -117,9 +117,6 @@ The following functions are provided:
 Will decode the given return code (defaults to $?) and return the 
 exit value, the signal it was killed with, and if it dumped core.
 
-Note decode_status hard codes the masks which is not really portable 
-even though it is documented like this in perlfunc.
-
 In scalar context, it will return a string explaining what happened, or 
 an empty string if no error occured.
 
