@@ -1,0 +1,40 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+my %opt;
+if (@ARGV) {
+    require Getopt::Long;
+    Getopt::Long::GetOptions(\%opt,
+	'print-file',
+	'namespace=s',
+        'sort',
+    ) || usage();
+    usage() if @ARGV;
+}
+
+sub usage {
+    (my $progname = $0) =~ s,.*/,,;
+    die "Usage: $progname [--namespace <ns>] [--print-file] [--sort]\n";
+}
+
+
+require ActiveState::ModInfo;
+my @modules = ActiveState::ModInfo::list_modules(
+    allowdup => 1,
+    namespace => $opt{namespace},
+);
+
+if ($opt{sort}) {
+    my @pairs;
+    push(@pairs, [splice(@modules, 0, 2)]) while @modules;
+    @pairs = sort { lc($a->[0]) cmp lc($b->[0]) } @pairs;
+    @modules = map @$_, @pairs;
+}
+
+while (@modules) {
+    my($mod, $file) = splice(@modules, 0, 2);
+    print "$mod";
+    print " $file" if $opt{"print-file"};
+    print "\n";
+}
