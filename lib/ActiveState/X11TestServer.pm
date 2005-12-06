@@ -12,7 +12,6 @@ my %defaults = (
         qw(
           plow.activestate.com:5
           plow.activestate.com:6
-          spanner.activestate.com:0
           )
     ],
     local => 20,
