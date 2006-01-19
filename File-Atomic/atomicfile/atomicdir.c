@@ -2,6 +2,8 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <unistd.h>
 
 #include "atomicdir.h"
 
