@@ -127,4 +127,4 @@ These functions currently only support IPv4 addresses.
 
 =head1 COPYRIGHT
 
-Copyright (C) 2005 Sophos PLC.  All rights reserved.
+Copyright (C) 2005 ActiveState Software Inc.  All rights reserved.
