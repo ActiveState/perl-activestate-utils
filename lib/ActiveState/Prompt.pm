@@ -2,7 +2,7 @@ package ActiveState::Prompt;
 
 use strict;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 use base 'Exporter';
 our @EXPORT_OK = qw(prompt yes enter);
@@ -182,6 +182,8 @@ The following functions are provided:
 
 =over 4
 
+=item prompt( $question )
+
 =item prompt( $question, $default )
 
 =item prompt( $question, %opts )
@@ -226,15 +228,16 @@ The C<silent> option works like C<use_default> but it also prevent the
 prompt text from being printed.  This forces prompt() to return the default
 without actually prompting.
 
+=item yes( $question )
+
 =item yes( $question, $default )
 
 Will use the prompt function to ask a question and then return a TRUE
 value if the answer was "yes" or "y".
 
-The default can either be a string like "yes", "y", "no" or "n", or a
+The $default can either be a string like "yes", "y", "no" or "n", or a
 boolean value in which case "yes" will be the default if TRUE and "no"
-otherwise.  This also means that if no $default is given it defaults
-to "no".
+otherwise.  If no $default is given it defaults to "no".
 
 =item enter()
 
