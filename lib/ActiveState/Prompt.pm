@@ -193,11 +193,11 @@ Options can be passed in as key/value pairs.  The following options
 are recognized:
 
   default
-  use_default
-  silent
   trim_space
   must_match
   no_match_msg
+  use_default
+  silent
 
 The C<default> is returned if the user simply press return.  The
 default value is shown in brackets.  If no default is provided then no
@@ -220,10 +220,11 @@ as specified in C<must_match>.
 If C<use_default> is TRUE, then no answer is read from the terminal
 and the default is returned (or "" if there is no default).  The
 C<use_default> is by default TRUE if the program is not running on a
-terminal.
+terminal or if the PERL_MM_USE_DEFAULT environment variable is TRUE.
 
-If C<silent> is TRUE, then the default is returned (or "" if there is
-no default) and nothing is printed on the terminal.
+The C<silent> option works like C<use_default> but it also prevent the
+prompt text from being printed.  This forces prompt() to return the default
+without actually prompting.
 
 =item yes( $question, $default )
 
