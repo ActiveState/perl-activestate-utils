@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-plan tests => 35;
+plan tests => 36;
 
 use ActiveState::Table;
 
@@ -31,9 +31,9 @@ a,b
 EOT
 
 $t->add_row({});
-$t->add_row({B => 45});
+$t->add_row({Box => 45});
 ok($t->as_csv, <<EOT);
-a,b,B
+a,b,Box
 1,NULL,NULL
 2,1,NULL
 NULL,NULL,NULL
@@ -41,7 +41,7 @@ NULL,NULL,45
 EOT
 ok($t->as_box, <<EOT);
 +------+------+------+
-| a    | b    | B    |
+| a    | b    | Box  |
 +------+------+------+
 | 1    | NULL | NULL |
 | 2    | 1    | NULL |
@@ -52,8 +52,17 @@ ok($t->as_box, <<EOT);
 EOT
 
 ok($t->as_box(null => "", show_trailer => 0), <<EOT);
-+---+---+----+
-| a | b | B  |
++---+---+-----+
+| a | b | Box |
++---+---+-----+
+| 1 |   |     |
+| 2 | 1 |     |
+|   |   |     |
+|   |   | 45  |
++---+---+-----+
+EOT
+
+ok($t->as_box(null => "", show_header => 0, show_trailer => 0), <<EOT);
 +---+---+----+
 | 1 |   |    |
 | 2 | 1 |    |
@@ -63,7 +72,7 @@ ok($t->as_box(null => "", show_trailer => 0), <<EOT);
 EOT
 
 ok($t->as_csv(null => 0), <<EOT);
-a,b,B
+a,b,Box
 1,0,0
 2,1,0
 0,0,0
@@ -76,7 +85,7 @@ ok($t->as_csv(null => "",
 	      row_separator => "#"),
    "1::#2:1:#::#::45#");
 
-$t->add_row({a => 1, b => 2, B => 3});
+$t->add_row({a => 1, b => 2, Box => 3});
 ok($t->fetchrow(0)->[0], 1);
 ok($t->fetchrow(0)->[2], undef);
 ok(j(map {defined($_) ? $_ : "undef"} $t->fetchrow(0)), "1:undef:undef");
@@ -88,7 +97,7 @@ ok($t->fetchrow_arrayref(5), undef);
 ok($t->fetchrow_hashref(0)->{a}, 1);
 ok($t->fetchrow_hashref(0)->{b}, undef);
 ok($t->fetchrow_hashref(0)->{c}, undef);
-ok(j(sort keys %{$t->fetchrow_hashref(0)}), "B:a:b");
+ok(j(sort keys %{$t->fetchrow_hashref(0)}), "Box:a:b");
 ok($t->fetchrow_hashref(5), undef);
 
 $t = ActiveState::Table->new;

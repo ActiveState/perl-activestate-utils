@@ -127,6 +127,7 @@ sub as_box {
     my $rows = $self->rows;
     my @out;
     if (my @title = $self->fields) {
+	@title = ("") x @title unless $show_header;
 	my @w = map length, @title;
 
 	# find optimal width
@@ -145,8 +146,10 @@ sub as_box {
 	_stretch(\@title, \@w);
 	my $sep = "+-" . join("-+-", map { "-" x length } @title) . "-+\n";
 	push(@out, $sep);
-	push(@out, "| ", join(" | ", @title), " |\n");
-	push(@out, $sep);
+	if ($show_header) {
+	    push(@out, "| ", join(" | ", @title), " |\n");
+	    push(@out, $sep);
+	}
 
 	for $i (0 .. $max) {
 	    my @field = $self->fetchrow($i);
