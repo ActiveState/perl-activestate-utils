@@ -1,5 +1,7 @@
 package ActiveState::Table;
 
+our $VERSION = "0.02";
+
 use strict;
 use Carp qw(carp);
 
@@ -108,10 +110,10 @@ sub as_csv {
 }
 
 sub as_box {
-    my($self, %opt) = shift;
+    my($self, %opt) = @_;
     my $null = delete $opt{null};
     my $show_header = delete $opt{show_header};
-    my $show_trailer = delete $opt{show_tailer};
+    my $show_trailer = delete $opt{show_trailer};
 
     if (%opt && $^W) {
 	carp("Unrecognized option '$_'") for keys %opt;
@@ -266,7 +268,7 @@ might be provided as key/value pairs:
    ---------------------+----------
    null                 | "NULL"
    show_header          | 1
-   show_tailer          | 1
+   show_trailer         | 1
    ---------------------+----------
 
 =item $t->as_csv( %options )

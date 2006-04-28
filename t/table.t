@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-plan tests => 34;
+plan tests => 35;
 
 use ActiveState::Table;
 
@@ -49,6 +49,17 @@ ok($t->as_box, <<EOT);
 | NULL | NULL | 45   |
 +------+------+------+
   (4 rows)
+EOT
+
+ok($t->as_box(null => "", show_trailer => 0), <<EOT);
++---+---+----+
+| a | b | B  |
++---+---+----+
+| 1 |   |    |
+| 2 | 1 |    |
+|   |   |    |
+|   |   | 45 |
++---+---+----+
 EOT
 
 ok($t->as_csv(null => 0), <<EOT);
