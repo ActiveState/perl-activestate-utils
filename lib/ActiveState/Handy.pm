@@ -2,13 +2,13 @@ package ActiveState::Handy;
 
 use strict;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 use base 'Exporter';
 our @EXPORT_OK = qw(
     add ceil
     cat cat_text
-    iso_date
+    iso_date iso_datetime
     xml_esc xml_clean
     cp_tree cp_files
 );
@@ -90,6 +90,16 @@ sub iso_date {
     return sprintf "%04d-%02d-%02d", $y, $m, $d;
 }
 
+sub iso_datetime {
+    my($Y, $M, $D, $h, $m, $s) = @_;
+    if (@_ == 1) {
+	($Y, $M, $D, $h, $m, $s) = (localtime $Y)[5, 4, 3, 2, 1, 0];
+	$Y += 1900;
+	$M++;
+    }
+    return sprintf "%04d-%02d-%02dT%02d:%02d:%02d", $Y, $M, $D, $h, $m, $s;
+}
+
 sub xml_esc {
     local $_ = shift;
     tr[\000-\010\013-\037][]d;
@@ -161,6 +171,13 @@ already exist.
 =item iso_date( $y, $m, $d )
 
 Returns a ISO 8601 formatted date; YYYY-MM-DD format.  See
+C<http://www.cl.cam.ac.uk/~mgk25/iso-time.html>.
+
+=item iso_datetime( $time )
+
+=item iso_datetime( $y, $m, $d, $h, $m, $s )
+
+Returns a ISO 8601 formatted timestamp; YYYY-MM-DDThh:mm:ss format.  See
 C<http://www.cl.cam.ac.uk/~mgk25/iso-time.html>.
 
 =item xml_esc( $text )
