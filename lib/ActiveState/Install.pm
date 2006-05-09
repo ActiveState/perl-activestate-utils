@@ -1,11 +1,11 @@
 package ActiveState::Install;
 
 use strict;
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 use File::Compare qw(compare);
 use Digest::MD5 ();
-use HTTP::Date qw(time2iso);
+use ActiveState::Handy qw(iso_datetime);
 use ActiveState::Prompt qw(enter);
 
 use base 'Exporter';
@@ -232,7 +232,7 @@ sub install {
 	_create(my $f, $pkg_file);
 	print $f "Package: $pkg\n";
 	print $f "Version: $ver\n";
-	print $f "Date: " . time2iso() . "\n";
+	print $f "Date: " . iso_datetime(time) . "\n";
 	print $f "Installer: " . __PACKAGE__ . " $VERSION\n";
 	print $f "\n";
 	for my $fname (sort keys %md5_new) {
