@@ -9,12 +9,11 @@ $| = 1;
 ok(cat("MANIFEST") =~ m,ActiveState/Handy,);
 
 {
-    local $ENV{TZ} = 'UTC';
     ok(iso_date(2000,1,1), "2000-01-01");  
     ok(iso_date(1011985293), "2002-01-25");
 
     ok(iso_datetime(2000,1,1,13,5,1), "2000-01-01T13:05:01");  
-    ok(iso_datetime(1011985293), "2002-01-25T20:01:33");
+    ok(iso_datetime(1011985293), qr/^2002-01-25T\d\d:01:33$/);
 }
 
 ok(add(), 0);
