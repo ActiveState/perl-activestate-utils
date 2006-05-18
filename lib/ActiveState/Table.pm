@@ -114,6 +114,7 @@ sub as_box {
     my $null = delete $opt{null};
     my $show_header = delete $opt{show_header};
     my $show_trailer = delete $opt{show_trailer};
+    my $align = delete $opt{align};
 
     if (%opt && $^W) {
 	carp("Unrecognized option '$_'") for keys %opt;
@@ -129,6 +130,7 @@ sub as_box {
     if (my @title = $self->fields) {
 	@title = ("") x @title unless $show_header;
 	my @w = map length, @title;
+	my @align = map $align->{$_} || "left", @title;
 
 	# find optimal width
 	my $max = $rows - 1;
@@ -154,7 +156,7 @@ sub as_box {
 	for $i (0 .. $max) {
 	    my @field = $self->fetchrow($i);
 	    for (@field) { $_ = $null unless defined }
-	    _stretch(\@field, \@w);
+	    _stretch(\@field, \@w, \@align);
 	    push(@out, "| ", join(" | ", @field), " |\n");
 	}
 	push(@out,  $sep) if $rows;
@@ -169,10 +171,21 @@ sub as_box {
 }
 
 sub _stretch {
-    my($text, $w) = @_;
+    my($text, $w, $align) = @_;
     my $i = 0;
     for (@$text) {
-	$_ .= " " x ($w->[$i] - length);
+	my $a = $align ? $align->[$i] || "left" : "left";
+	my $space = " " x ($w->[$i] - length);
+	if ($a eq "right") {
+	    substr($_, 0, 0) = $space;
+	}
+	elsif ($a eq "center") {
+	    my $left_space = substr($space, 0, length($space)/2, "");
+	    $_ = $left_space . $_ . $space;
+	}
+	else {
+	    $_ .= $space;
+	}
 	$i++;
     }
 }
@@ -269,10 +282,15 @@ might be provided as key/value pairs:
 
    name                 | default
    ---------------------+----------
+   align                | {}
    null                 | "NULL"
    show_header          | 1
    show_trailer         | 1
    ---------------------+----------
+
+The C<align> option is a hash with field names as keys and the strings
+"left", "right" or "center" as values.  Alignment for fields not found
+in this hash is "left".
 
 =item $t->as_csv( %options )
 
