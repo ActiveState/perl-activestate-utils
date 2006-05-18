@@ -171,20 +171,20 @@ sub as_box {
 }
 
 sub _stretch {
-    my($text, $w, $align) = @_;
+    my($text, $w, $a) = @_;
     my $i = 0;
     for (@$text) {
-	my $a = $align ? $align->[$i] || "left" : "left";
-	my $space = " " x ($w->[$i] - length);
-	if ($a eq "right") {
-	    substr($_, 0, 0) = $space;
+	my $align = $a->[$i] || "left";
+	my $pad = " " x ($w->[$i] - length);
+	if ($align eq "right") {
+	    substr($_, 0, 0) = $pad;
 	}
-	elsif ($a eq "center") {
-	    my $left_space = substr($space, 0, length($space)/2, "");
-	    $_ = $left_space . $_ . $space;
+	elsif ($align eq "center") {
+	    my $left_pad = substr($pad, 0, length($pad)/2, "");
+	    $_ = $left_pad . $_ . $pad;
 	}
 	else {
-	    $_ .= $space;
+	    $_ .= $pad;
 	}
 	$i++;
     }
