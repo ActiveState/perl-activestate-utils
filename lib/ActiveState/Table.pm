@@ -81,6 +81,14 @@ sub add_row {
     }
 }
 
+sub sort {
+    my $self = shift;
+    my $comparator = shift;
+    package main;  # so that $a, $b is visible to the $comparator
+    @{$self->{rows}} = sort $comparator @{$self->{rows}};
+    return;
+}
+
 sub as_csv {
     my($self, %opt) = @_;
     my $sep = delete $opt{field_separator};
@@ -274,6 +282,14 @@ automatically in sorted order.  To enforce an order add the fields
 before adding rows.
 
 There is no return value.
+
+=item $t->sort( $comparator )
+
+This will sort the rows of the table using the given $comparator
+function to compare elements.  The $comparator is called as for perl's
+builtin sort function.  References to the rows to compare is available
+in C<$::a> and C<$::b> in the form returned by
+C<< $t->fetchrow_arrayref >>.
 
 =item $t->as_box( %options )
 

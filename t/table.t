@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-plan tests => 37;
+plan tests => 39;
 
 use ActiveState::Table;
 
@@ -122,6 +122,25 @@ $t->add_row({ a => "a,b" });
 ok($t->as_csv, <<EOT);
 b,a
 NULL,a,b
+EOT
+
+$t = ActiveState::Table->new;
+$t->add_row({a => 10, b => 1});
+$t->add_row({a => 8, b => 3});
+$t->add_row({a => 9});
+$t->sort(sub { $a->[0] <=> $b->[0] });
+ok($t->as_csv, <<EOT);
+a,b
+8,3
+9,NULL
+10,1
+EOT
+$t->sort(sub { no warnings 'uninitialized'; $b->[1] <=> $a->[1] });
+ok($t->as_csv, <<EOT);
+a,b
+8,3
+10,1
+9,NULL
 EOT
 
 sub j { join(":", @_) }
