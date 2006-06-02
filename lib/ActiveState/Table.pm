@@ -123,6 +123,7 @@ sub as_box {
     my $show_header = delete $opt{show_header};
     my $show_trailer = delete $opt{show_trailer};
     my $align = delete $opt{align};
+    my $box_chars = $opt{box_chars};
 
     if (%opt && $^W) {
 	carp("Unrecognized option '$_'") for keys %opt;
@@ -154,20 +155,23 @@ sub as_box {
 	}
 
 	_stretch(\@title, \@w);
-	my $sep = "+-" . join("-+-", map { "-" x length } @title) . "-+\n";
-	push(@out, $sep);
+	my $sep = "q-" . join("-w-", map { "-" x length } @title) . "-e\n";
+	my $I = _lines("|", $box_chars);
+	push(@out, _lines($sep, $box_chars));
+	$sep =~ tr/qwe/asd/;
 	if ($show_header) {
-	    push(@out, "| ", join(" | ", @title), " |\n");
-	    push(@out, $sep);
+	    push(@out, "$I ", join(" $I ", @title), " $I\n");
+	    push(@out, _lines($sep, $box_chars)) if $rows;
 	}
 
 	for $i (0 .. $max) {
 	    my @field = $self->fetchrow($i);
 	    for (@field) { $_ = $null unless defined }
 	    _stretch(\@field, \@w, \@align);
-	    push(@out, "| ", join(" | ", @field), " |\n");
+	    push(@out, "$I ", join(" $I ", @field), " $I\n");
 	}
-	push(@out,  $sep) if $rows;
+	$sep =~ tr/asd/zxc/;
+	push(@out, _lines($sep, $box_chars));
     }
     if ($show_trailer) {
 	push(@out, "  (1 row)\n") if $rows == 1;
@@ -176,6 +180,23 @@ sub as_box {
 
     return join("", @out) if defined wantarray;
     print @out;
+}
+
+sub _lines {
+    my($box, $box_chars) = @_;
+    if (!$box_chars || $box_chars qw "ascii") {
+	$box =~ tr/qweasdzxc/+-+++++-+/;
+    }
+    elsif ($box_chars eq "dos") {
+	$box =~ tr/qweasdzxc\-|/\xDA\xC2\xBF\xC3\xC5\xB4\xC0\xC1\xD9\xC4\xB3/;
+    }
+    elsif ($box_chars eq "unicode") {
+	$box =~ tr/qweasdzxc\-|/\x{250C}\x{252C}\x{2510}\x{251C}\x{253C}\x{2524}\x{2514}\x{2534}\x{2518}\x{2500}\x{2502}/;
+    }
+    else {
+	$box =~ tr/qweasdzxc\-|/$box_chars/;
+    }
+    $box;
 }
 
 sub _stretch {
@@ -302,11 +323,18 @@ might be provided as key/value pairs:
    null                 | "NULL"
    show_header          | 1
    show_trailer         | 1
+   box_chars            | "ascii"
    ---------------------+----------
 
 The C<align> option is a hash with field names as keys and the strings
 "left", "right" or "center" as values.  Alignment for fields not found
 in this hash is "left".
+
+The C<box_chars> is either the name of a box drawing scheme or the 11
+characters to use; starting with the upper left corner and going down
+one row at a time to the lower right corner, and finally the
+horizontal and vertical line character.  The current named schemes are
+"dos" and "unicode".
 
 =item $t->as_csv( %options )
 
