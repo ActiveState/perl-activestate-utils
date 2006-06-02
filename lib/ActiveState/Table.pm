@@ -184,7 +184,7 @@ sub as_box {
 
 sub _lines {
     my($box, $box_chars) = @_;
-    if (!$box_chars || $box_chars qw "ascii") {
+    if (!$box_chars || $box_chars eq "ascii") {
 	$box =~ tr/qweasdzxc/+-+++++-+/;
     }
     elsif ($box_chars eq "dos") {
