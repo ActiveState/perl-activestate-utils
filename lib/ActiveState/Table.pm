@@ -129,7 +129,7 @@ sub as_box {
     my $show_header = delete $opt{show_header};
     my $show_trailer = delete $opt{show_trailer};
     my $align = delete $opt{align};
-    my $box_chars = $opt{box_chars};
+    my $box_chars = delete $opt{box_chars};
 
     if (%opt && $^W) {
 	carp("Unrecognized option '$_'") for keys %opt;
