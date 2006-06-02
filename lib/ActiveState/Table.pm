@@ -110,9 +110,15 @@ sub as_csv {
     my @lines;
     push(@lines, join($sep, @$fields)) if $show_header;
     for my $row (@{$self->{rows}}) {
-	push(@lines, join($sep,
-			  map defined($_) ? $_ : $null,
-			  @$row, ((undef) x (@$fields - @$row))));
+	my @v = (@$row, ((undef) x (@$fields - @$row)));
+	for (@v) {
+	    $_ = $null unless defined;
+	    if (length($sep) && (index($_, $sep) >= 0 || /"/)) {
+		s/"/""/g;
+		$_ = qq("$_");
+	    }
+	}
+	push(@lines, join($sep, @v));
     }
     return join($eol, @lines, "");
 }
@@ -350,13 +356,17 @@ pairs:
    show_header          | 1
    ---------------------+----------
 
-The method does not currently quote or escape values if they contain
-any of the separators.
+Fields that contains the C<field_separator> or the quote character
+will be quoted.
 
 =back
 
 =head1 BUGS
 
 none.
+
+=head1 SEE ALSO
+
+RFC 4180 and L<http://en.wikipedia.org/wiki/Comma-separated_values>
 
 =cut

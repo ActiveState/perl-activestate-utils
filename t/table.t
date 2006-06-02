@@ -118,10 +118,12 @@ ok(j($t->fields, "b:a"));
 ok($t->as_csv, "b,a\n");
 ok($t->as_csv(show_header => 0), "");
 $t->add_row({ a => "a,b" });
+$t->add_row({ a => 'x"x' });
 
 ok($t->as_csv, <<EOT);
 b,a
-NULL,a,b
+NULL,"a,b"
+NULL,"x""x"
 EOT
 
 $t = ActiveState::Table->new;
