@@ -167,8 +167,8 @@ sub as_box {
 	    my $too_much = $width - $max_width;
 	    while ($too_much > 0) {
 		# something needs to be done
-		my $widest = 0;
-		for my $j (1 .. @w - 1) {
+		my $widest = @w - 1;
+		for (my $j = $widest - 1; $j >= 0; $j--) {
 		    if ($w[$j] > $w[$widest]) {
 			$widest = $j;
 		    }
@@ -377,7 +377,7 @@ horizontal and vertical line character.  The current named schemes are
 "dos" and "unicode".
 
 If C<max_width> is specified it limits how wide the box can get.  The
-longest fields are truncated to until the box is no wider than the
+longest fields are truncated until the box is no wider than the
 given number of characters.  Truncated fields are shown with trailing
 "..." or "+" marker.
 
