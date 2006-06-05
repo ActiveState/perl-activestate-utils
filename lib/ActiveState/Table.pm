@@ -130,6 +130,7 @@ sub as_box {
     my $show_trailer = delete $opt{show_trailer};
     my $align = delete $opt{align};
     my $box_chars = delete $opt{box_chars};
+    my $max_width = delete $opt{max_width};
 
     if (%opt && $^W) {
 	carp("Unrecognized option '$_'") for keys %opt;
@@ -157,6 +158,24 @@ sub as_box {
 		$_ = $null unless defined;
 		$w[$j] = length if $w[$j] < length;
 		$j++;
+	    }
+	}
+
+	if ($max_width) {
+	    my $width = @w * 3 + 1;
+	    $width += $_ for @w;
+	    my $too_much = $width - $max_width;
+	    while ($too_much > 0) {
+		# something needs to be done
+		my $widest = 0;
+		for my $j (1 .. @w - 1) {
+		    if ($w[$j] > $w[$widest]) {
+			$widest = $j;
+		    }
+		}
+		die unless $w[$widest] > 1;
+		$w[$widest]--;
+		$too_much--;
 	    }
 	}
 
@@ -210,16 +229,30 @@ sub _stretch {
     my $i = 0;
     for (@$text) {
 	my $align = $a->[$i] || "left";
-	my $pad = " " x ($w->[$i] - length);
-	if ($align eq "right") {
-	    substr($_, 0, 0) = $pad;
+	my $pad = ($w->[$i] - length);
+	if ($pad > 0) {
+	    $pad = " " x $pad;
+	    if ($align eq "right") {
+		substr($_, 0, 0) = $pad;
+	    }
+	    elsif ($align eq "center") {
+		my $left_pad = substr($pad, 0, length($pad)/2, "");
+		$_ = $left_pad . $_ . $pad;
+	    }
+	    else {
+		$_ .= $pad;
+	    }
 	}
-	elsif ($align eq "center") {
-	    my $left_pad = substr($pad, 0, length($pad)/2, "");
-	    $_ = $left_pad . $_ . $pad;
-	}
-	else {
-	    $_ .= $pad;
+	elsif ($pad < 0) {
+	    if ($w->[$i] > 10) {
+		substr($_, $w->[$i] - 3) = "...";
+	    }
+	    elsif ($w->[$i] >= 1) {
+		substr($_, $w->[$i] - 1) = "+";
+	    }
+	    else {
+		$_ = "";  # ultimate shrinkage, should not happen
+	    }
 	}
 	$i++;
     }
@@ -330,6 +363,7 @@ might be provided as key/value pairs:
    show_header          | 1
    show_trailer         | 1
    box_chars            | "ascii"
+   max_width            | undef
    ---------------------+----------
 
 The C<align> option is a hash with field names as keys and the strings
@@ -341,6 +375,11 @@ characters to use; starting with the upper left corner and going down
 one row at a time to the lower right corner, and finally the
 horizontal and vertical line character.  The current named schemes are
 "dos" and "unicode".
+
+If C<max_width> is specified it limits how wide the box can get.  The
+longest fields are truncated to until the box is no wider than the
+given number of characters.  Truncated fields are shown with trailing
+"..." or "+" marker.
 
 =item $t->as_csv( %options )
 

@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-plan tests => 39;
+plan tests => 40;
 
 use ActiveState::Table;
 
@@ -60,6 +60,18 @@ ok($t->as_box(align => {b => "center", Box => "right"}), <<EOT);
 | NULL | NULL | NULL |
 | NULL | NULL |   45 |
 +------+------+------+
+  (4 rows)
+EOT
+
+ok($t->as_box(max_width => 17), <<EOT);
++----+----+-----+
+| a  | b  | Box |
++----+----+-----+
+| 1  | N+ | NU+ |
+| 2  | 1  | NU+ |
+| N+ | N+ | NU+ |
+| N+ | N+ | 45  |
++----+----+-----+
   (4 rows)
 EOT
 
