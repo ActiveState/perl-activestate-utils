@@ -161,12 +161,19 @@ sub as_box {
 	    }
 	}
 
+	my $PAD = " ";
+	my $PAD_DASH = "-" x length($PAD);
 	if ($max_width) {
-	    my $width = @w * 3 + 1;
+	    my $width = @w * (length($PAD) * 2 + 1) + 1;
 	    $width += $_ for @w;
 	    my $too_much = $width - $max_width;
+	    if ($too_much > 0 && length($PAD) && $box_chars && $box_chars ne "ascii") {
+		$too_much -= @w * length($PAD) * 2;
+		$PAD = "";
+		$PAD_DASH = "";
+	    }
 	    while ($too_much > 0) {
-		# something needs to be done
+		# try to shrink the fields until we fit
 		my $widest = @w - 1;
 		for (my $j = $widest - 1; $j >= 0; $j--) {
 		    if ($w[$j] > $w[$widest]) {
@@ -180,12 +187,12 @@ sub as_box {
 	}
 
 	_stretch(\@title, \@w);
-	my $sep = "q-" . join("-w-", map { "-" x length } @title) . "-e\n";
+	my $sep = "q$PAD_DASH" . join("${PAD_DASH}w$PAD_DASH", map { "-" x length } @title) . "${PAD_DASH}e\n";
 	my $I = _lines("|", $box_chars);
 	push(@out, _lines($sep, $box_chars));
 	$sep =~ tr/qwe/asd/;
 	if ($show_header) {
-	    push(@out, "$I ", join(" $I ", @title), " $I\n");
+	    push(@out, "$I$PAD", join("$PAD$I$PAD", @title), "$PAD$I\n");
 	    push(@out, _lines($sep, $box_chars)) if $rows;
 	}
 
@@ -193,7 +200,7 @@ sub as_box {
 	    my @field = $self->fetchrow($i);
 	    for (@field) { $_ = $null unless defined }
 	    _stretch(\@field, \@w, \@align);
-	    push(@out, "$I ", join(" $I ", @field), " $I\n");
+	    push(@out, "$I$PAD", join("$PAD$I$PAD", @field), "$PAD$I\n");
 	}
 	$sep =~ tr/asd/zxc/;
 	push(@out, _lines($sep, $box_chars));
