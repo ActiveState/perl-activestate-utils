@@ -186,7 +186,7 @@ sub as_box {
 	    }
 	}
 
-	_stretch(\@title, \@w);
+	_stretch(\@title, \@w, undef, $box_chars);
 	my $sep = "q$PAD_DASH" . join("${PAD_DASH}w$PAD_DASH", map { "-" x length } @title) . "${PAD_DASH}e\n";
 	my $I = _lines("|", $box_chars);
 	push(@out, _lines($sep, $box_chars));
@@ -199,7 +199,7 @@ sub as_box {
 	for $i (0 .. $max) {
 	    my @field = $self->fetchrow($i);
 	    for (@field) { $_ = $null unless defined }
-	    _stretch(\@field, \@w, \@align);
+	    _stretch(\@field, \@w, \@align, $box_chars);
 	    push(@out, "$I$PAD", join("$PAD$I$PAD", @field), "$PAD$I\n");
 	}
 	$sep =~ tr/asd/zxc/;
@@ -232,7 +232,7 @@ sub _lines {
 }
 
 sub _stretch {
-    my($text, $w, $a) = @_;
+    my($text, $w, $a, $box_chars) = @_;
     my $i = 0;
     for (@$text) {
 	my $align = $a->[$i] || "left";
@@ -251,7 +251,14 @@ sub _stretch {
 	    }
 	}
 	elsif ($pad < 0) {
-	    if ($w->[$i] > 10) {
+	    $box_chars ||= "ascii";
+	    if ($box_chars eq "dos") {
+		substr($_, $w->[$i] - 1) = "\xAF";
+	    }
+	    elsif ($box_chars eq "unicode") {
+		substr($_, $w->[$i] - 1) = "\xBB";
+	    }
+	    elsif ($w->[$i] > 10) {
 		substr($_, $w->[$i] - 3) = "...";
 	    }
 	    elsif ($w->[$i] >= 1) {
