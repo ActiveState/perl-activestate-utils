@@ -4,7 +4,8 @@ use strict;
 
 our $VERSION = '0.02';
 
-use Exporter qw(import);
+use Exporter ();
+our @ISA = qw(Exporter);
 our @EXPORT_OK = qw(path_list find_prog is_abs_path abs_path join_path rel_path unsymlinked realpath);
 
 use constant IS_WIN32 => $^O eq "MSWin32";
