@@ -8,7 +8,7 @@ unless ($^O eq "MSWin32") {
 
 WriteMakefile(
     NAME	 => 'ActiveState::Utils',
-    VERSION	 => '1.23',
+    VERSION	 => '2.00',
     DIR		 => $DIR,
     PREREQ_PM    => { 'Time::HiRes' => 1 },
     ($] ge '5.006' ? (
