@@ -2,7 +2,7 @@
 
 use strict;
 use Test qw(plan ok);
-plan tests => 32;
+plan tests => 34;
 
 use ActiveState::ModInfo qw(
     mod2fname fname2mod
@@ -10,6 +10,7 @@ use ActiveState::ModInfo qw(
     open_inc open_module
     fixup_module_case
     list_modules
+    parse_version
 );
 
 ok(mod2fname("Foo"), "Foo.pm");
@@ -72,3 +73,7 @@ ok($modules{integer});
 %modules = list_modules(namespace => "File");
 ok($modules{"File::Find"});
 ok(!$modules{"integer"});
+
+ok(parse_version("lib/ActiveState/ModInfo.pm"), "undef");
+ok(parse_version("lib/ActiveState/Table.pm"), "0.02");
+

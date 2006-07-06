@@ -8,6 +8,7 @@ our @EXPORT_OK = qw(
     find_inc find_module
     open_inc open_module
     fixup_module_case
+    parse_version
 );
 
 use File::Find qw(find);
@@ -131,6 +132,39 @@ sub find_module {
 
 sub open_module {
     return open_inc(mod2fname(shift), @_);
+}
+
+sub parse_version {
+    my $parsefile = shift;
+    my $result;
+    local *FH;
+    local $/ = "\n";
+    local $_;
+    open(FH,$parsefile) or die "Could not open '$parsefile': $!";
+    my $inpod = 0;
+    while (<FH>) {
+        $inpod = /^=(?!cut)/ ? 1 : /^=cut/ ? 0 : $inpod;
+        next if $inpod || /^\s*#/;
+        chop;
+        next unless /(?<!\\)([\$*])(([\w\:\']*)\bVERSION)\b.*\=/;
+        my $eval = qq{
+            package ExtUtils::MakeMaker::_version;
+            no strict;
+
+            local $1$2;
+            \$$2=undef; do {
+                $_
+            }; \$$2
+        };
+        local $^W = 0;
+        $result = eval($eval);
+        warn "Could not eval '$eval' in $parsefile: $@" if $@;
+        last;
+    }
+    close FH;
+
+    $result = "undef" unless defined $result;
+    return $result;
 }
 
 sub fixup_module_case {
@@ -315,6 +349,12 @@ same.  The file is opened in read-only mode.
 =item $fh = open_module( $mod, \@inc )
 
 Returns an opened file handle for the given module, or C<undef> if not found.
+
+=item $vers = parse_version( $filename )
+
+Return the $VERSION of a module using the official ExtUtils::MakeMaker
+algorithm.  This is actually a copy of the MakeMaker function, but
+allow it to be used without loading all of MakeMaker.
 
 =back
 
