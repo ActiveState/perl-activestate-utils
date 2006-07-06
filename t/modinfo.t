@@ -74,6 +74,6 @@ ok($modules{integer});
 ok($modules{"File::Find"});
 ok(!$modules{"integer"});
 
-ok(parse_version("lib/ActiveState/ModInfo.pm"), "undef");
+ok(parse_version("lib/ActiveState/ModInfo.pm"), undef);
 ok(parse_version("lib/ActiveState/Table.pm"), "0.02");
 

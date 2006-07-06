@@ -137,12 +137,13 @@ sub open_module {
 sub parse_version {
     my $parsefile = shift;
     my $result;
-    local *FH;
+
     local $/ = "\n";
     local $_;
-    open(FH,$parsefile) or die "Could not open '$parsefile': $!";
+
+    open(my $fh, "<", $parsefile) or die "Could not open '$parsefile': $!";
     my $inpod = 0;
-    while (<FH>) {
+    while (<$fh>) {
         $inpod = /^=(?!cut)/ ? 1 : /^=cut/ ? 0 : $inpod;
         next if $inpod || /^\s*#/;
         chop;
@@ -158,12 +159,11 @@ sub parse_version {
         };
         local $^W = 0;
         $result = eval($eval);
-        warn "Could not eval '$eval' in $parsefile: $@" if $@;
+        #warn "Could not eval '$eval' in $parsefile: $@" if $@;
         last;
     }
-    close FH;
+    close($fh);
 
-    $result = "undef" unless defined $result;
     return $result;
 }
 
@@ -353,8 +353,9 @@ Returns an opened file handle for the given module, or C<undef> if not found.
 =item $vers = parse_version( $filename )
 
 Return the $VERSION of a module using the official ExtUtils::MakeMaker
-algorithm.  This is actually a copy of the MakeMaker function, but
-allow it to be used without loading all of MakeMaker.
+algorithm.  This is a slightly modified copy of the MakeMaker
+function.  The main difference is that it returns a real C<undef> if
+no version number is found and do it without producing any warning.
 
 =back
 
