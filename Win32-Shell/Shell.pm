@@ -1,4 +1,4 @@
-package Win32::Shell;
+package ActiveState::Win32::Shell;
 
 use 5.006;
 use strict;
@@ -12,7 +12,7 @@ our @EXPORT_OK = qw(FindExecutable BrowseDocument BrowseUrl);
 
 our $VERSION = '0.01';
 
-bootstrap Win32::Shell $VERSION;
+bootstrap ActiveState::Win32::Shell $VERSION;
 
 sub BrowseDocument {
     my($document,$fragment) = @_;
@@ -35,11 +35,11 @@ __END__
 
 =head1 NAME
 
-Win32::Shell - Windows Shell Functions
+ActiveState::Win32::Shell - Windows Shell Functions
 
 =head1 SYNOPSIS
 
-  use Win32::Shell qw(BrowseDocument);
+  use ActiveState::Win32::Shell qw(BrowseDocument);
 
   my $document = 'C:\Program Files\ActiveState\Document.html';
   my $fragment = 'anchor_name';
@@ -49,7 +49,8 @@ Win32::Shell - Windows Shell Functions
 
 =head1 DESCRIPTION
 
-The Win32::Shell module provides access to the windows shell (Explorer).
+The ActiveState::Win32::Shell module provides access to the
+windows shell (Explorer).
 
 The following methods are provided:
 
@@ -57,8 +58,8 @@ The following methods are provided:
 
 =item BrowseDocument( $document, $fragment )
 
-Opens $document in default browser and navigates to $fragment.  Returns
-true if the operation was successful.
+Opens $document in default browser and navigates to $fragment.
+Returns true if the operation was successful.
 
 =item BrowseUrl( $url )
 
@@ -73,6 +74,6 @@ Returns the executable registered to open the $document or undef.
 
 =head1 COPYRIGHT
 
-Copyright 2004 ActiveState Software Inc.
+Copyright 2006 ActiveState Software Inc.
 
 =cut

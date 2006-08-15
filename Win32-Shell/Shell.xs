@@ -5,7 +5,7 @@
 #include "perl.h"
 #include "XSUB.h"
 
-MODULE = Win32::Shell		PACKAGE = Win32::Shell
+MODULE = ActiveState::Win32::Shell	PACKAGE = ActiveState::Win32::Shell
 
 PROTOTYPES: DISABLE
 

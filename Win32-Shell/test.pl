@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 BEGIN { print "1..1\n" }
-use Win32::Shell qw(BrowseDocument BrowseUrl);
+use ActiveState::Win32::Shell qw(BrowseDocument BrowseUrl);
 
 print "ok 1\n";
 exit;

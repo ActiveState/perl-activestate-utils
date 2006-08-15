@@ -2,7 +2,10 @@ require v5.6;
 use ExtUtils::MakeMaker;
 
 my $DIR = [];
-unless ($^O eq "MSWin32") {
+if ($^O eq "MSWin32") {
+    push @$DIR, "Win32-Shell";
+}
+else {
     push @$DIR, "File-Atomic";
 }
 
