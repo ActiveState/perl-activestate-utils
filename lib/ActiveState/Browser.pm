@@ -1,6 +1,6 @@
 package ActiveState::Browser;
 
-our $VERSION = "1.00";
+our $VERSION = "1.01";
 
 use strict;
 use ActiveState::Handy qw(shell_quote);
@@ -72,13 +72,13 @@ sub _browser_cmd {
 
 sub open {
     my $url = shift;
-    if (IS_WIN32 && eval { require Win32::Shell }) {
+    if (IS_WIN32 && eval { require ActiveState::Win32::Shell }) {
 	my($document,$fragment) = $url =~ m,^(?:file:///?)?([^#]+)(?:#(.*))?$,;
 	unless ($document =~ /^\w{2,}:/) {
 	    $document = join_path($HTML_DIR, $document);
-	    return if Win32::Shell::BrowseDocument($document, $fragment);
+	    return if ActiveState::Win32::Shell::BrowseDocument($document, $fragment);
 	}
-	Win32::Shell::BrowseUrl($url);
+	ActiveState::Win32::Shell::BrowseUrl($url);
 	return;
     }
 
