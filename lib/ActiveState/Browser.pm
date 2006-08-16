@@ -22,10 +22,18 @@ unless ($BROWSER) {
 	for (qw(firefox mozilla netscape kfmclient gnome-open)) {
 	    if (my $p = find_prog($_)) {
 		$BROWSER = $p;
+		if ($_ eq "kfmclient") {
+		    $BROWSER = [$BROWSER, "openURL"];
+		}
+		elsif ($_ eq "gnome-open") {
+		    # fine as it is
+		}
+		else {
+		    $BROWSER = shell_quote($BROWSER) . " %s &";
+		}
 		last;
 	    }
 	}
-	$BROWSER = [$BROWSER, "openURL"] if $BROWSER && $BROWSER =~ /kfmclient$/;
     }
 }
 
@@ -60,6 +68,7 @@ sub _browser_cmd {
     }
     elsif ($browser =~ /%/) {
 	$cmd = $browser;
+	$url = shell_quote($url);
 	# substitute %s with url, and %% to %.
 	$cmd =~ s/%([%s])/$1 eq '%' ? '%' : $url/eg;
     }
