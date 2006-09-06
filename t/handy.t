@@ -1,12 +1,34 @@
 use Test qw(plan ok);
 
-plan tests => 48;
+plan tests => 56;
 
-use ActiveState::Handy qw(add cat iso_date iso_datetime run xml_esc xml_clean ceil 
-                          shell_quote decode_status);
+use ActiveState::Handy qw(
+    add cat cat_text file_content
+    iso_date iso_datetime run xml_esc xml_clean ceil 
+    shell_quote decode_status
+);
 $| = 1;
 
 ok(cat("MANIFEST") =~ m,ActiveState/Handy,);
+ok(cat_text("MANIFEST") =~ m,ActiveState/Handy,);
+ok(file_content("MANIFEST"), cat("MANIFEST"));
+
+my $f = "xx$$";
+file_content($f, "a\r\nb\n\0");
+ok(cat($f), "a\r\nb\n\0");
+ok(unlink($f));
+file_content("$f/$f/$f", "foo\n");
+ok(-d $f);
+ok(cat("$f/$f/$f"), "foo\n");
+eval { file_content($f, "bar\n") };
+ok($@);
+
+{
+   require File::Path;
+   File::Path::rmtree($f, 0);
+   ok(!-d $f);
+}
+
 
 {
     ok(iso_date(2000,1,1), "2000-01-01");  

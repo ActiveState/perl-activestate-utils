@@ -8,6 +8,7 @@ use base 'Exporter';
 our @EXPORT_OK = qw(
     add ceil
     cat cat_text
+    file_content
     iso_date iso_datetime
     xml_esc xml_clean
     cp_tree cp_files
@@ -31,11 +32,7 @@ sub add {
 }
 
 sub cat {
-    my $f = shift;
-    open(my $fh, "<", $f) || return undef;
-    binmode($fh);
-    local $/;
-    return scalar <$fh>;
+    return file_content(shift);
 }
 
 sub cat_text {
@@ -78,6 +75,41 @@ sub cp_tree {
 	File::Copy::copy("$from/$file", "$to/$file")
 	    or die "Can't copy '$from/$file' to '$to/$file'";
     }
+}
+
+sub file_content {
+    my $name = shift;
+    if (@_) {
+	# write
+	my $f;
+	unless (open($f, ">", $name)) {
+	    my $err = $!;
+	    if (!-e $name) {
+		# does it help to create the directory first
+		require File::Basename;
+		require File::Path;
+		my $dirname = File::Basename::dirname($name);
+		if (File::Path::mkpath($dirname)) {
+		    # retry
+		    undef($err);
+		    unless (open($f, ">", $name)) {
+			$err = $!;
+		    }
+		}
+	    }
+	    die "Can't create '$name': $err" if $err;
+	}
+	binmode($f);
+	print $f $_[0];
+	close($f) || die "Can't write to '$name': $!";
+	return;
+    }
+
+    # read
+    open(my $f, "<", $name) || return undef;
+    binmode($f);
+    local $/;
+    return scalar <$f>;
 }
 
 sub iso_date {
@@ -139,13 +171,12 @@ The following functions are provided:
 
 Adds the given arguments together.
 
-=item cat( $file )
+=item cat( $filename )
 
-Returns the content of a file.  Returns C<undef> if the file could not
-be opened.  Unlike the cat(1) command it only takes a single file
-name argument.  The file is read in binary mode.
+Returns the content of a file.  Same as file_content( $filename ).
+This function is still present for legacy reasons.
 
-=item cat_text( $file )
+=item cat_text( $filename )
 
 Just like cat() but will read the file in text mode.  Makes a
 difference on some platforms (like Windows).
@@ -165,6 +196,22 @@ be found.
 Recursively copies all files and subdirectories from source to destination
 directory. All destination directories will be created if they don't
 already exist.
+
+=item file_content( $filename )
+
+=item file_content( $filename, $content )
+
+Get or set the content of a file.  The file I/O takes place in binary
+mode.
+
+If called with a single argument, then try to read the given file and
+return C<undef> if the file could not be opened.
+
+If called with two arguments, try to write the given $content to the
+file denoted by the given $filename, creating the file itself or
+missing directories as needed.  If the file can't be opened or created
+this function will croak.  There is no return value when the file is
+set.
 
 =item iso_date( $time )
 
