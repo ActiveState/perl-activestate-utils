@@ -1,6 +1,6 @@
 package ActiveState::Browser;
 
-our $VERSION = "1.01";
+our $VERSION = "1.02";
 
 use strict;
 use ActiveState::Handy qw(shell_quote);
@@ -19,7 +19,16 @@ unless ($BROWSER) {
 	$BROWSER = "/usr/bin/open %s";
     }
     else {
-	for (qw(firefox mozilla netscape kfmclient gnome-open)) {
+	my @try = qw(xdg-open);
+	if ($ENV{BROWSER}) {
+	    push(@try, split(/:/, $ENV{BROWSER}));
+	}
+	else {
+	    push(@try, qw(firefox mozilla netscape));
+	}
+	unshift(@try, "kfmclient") if $ENV{KDE_FULL_SESSION};
+	unshift(@try, "gnome-open") if $ENV{GNOME_DESKTOP_SESSION_ID};
+	for (@try) {
 	    if (my $p = find_prog($_)) {
 		$BROWSER = $p;
 		if ($_ eq "kfmclient") {
