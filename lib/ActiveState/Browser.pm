@@ -24,7 +24,7 @@ unless ($BROWSER) {
 	    push(@try, split(/:/, $ENV{BROWSER}));
 	}
 	else {
-	    push(@try, qw(firefox mozilla netscape));
+	    push(@try, qw(firefox galeon mozilla opera netscape));
 	}
 	unshift(@try, "kfmclient") if $ENV{KDE_FULL_SESSION};
 	unshift(@try, "gnome-open") if $ENV{GNOME_DESKTOP_SESSION_ID};
@@ -34,7 +34,7 @@ unless ($BROWSER) {
 		if ($_ eq "kfmclient") {
 		    $BROWSER = [$BROWSER, "openURL"];
 		}
-		elsif ($_ eq "gnome-open") {
+		elsif ($_ eq "gnome-open" || $_ eq "opera") {
 		    # fine as it is
 		}
 		else {
