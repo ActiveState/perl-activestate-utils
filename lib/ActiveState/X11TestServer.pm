@@ -125,6 +125,7 @@ sub instance {
 sub DESTROY {
     my $self = shift;
     if (my $pid = $self->{pid}) {
+        local $?;
         if (kill 0 => $pid) {
             kill TERM => $pid;
             my $pid = waitpid($pid, 0);
