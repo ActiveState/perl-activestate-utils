@@ -98,7 +98,7 @@ ActiveState::Run - Collection of small utility functions
 
 =head1 SYNOPSIS
 
- use ActiveState::Handy qw(run);
+ use ActiveState::Run qw(run);
  run("ls -l");
 
 =head1 DESCRIPTION
