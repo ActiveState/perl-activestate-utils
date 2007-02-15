@@ -1,6 +1,6 @@
 package ActiveState::Browser;
 
-our $VERSION = "1.02";
+our $VERSION = "1.03";
 
 use strict;
 use ActiveState::Handy qw(shell_quote);
@@ -10,7 +10,7 @@ use ActiveState::Run qw(run);
 use constant IS_WIN32 => ($^O eq "MSWin32");
 use constant IS_DARWIN => ($^O eq "darwin");
 
-our $BROWSER = $ENV{AS_BROWSER};
+our $BROWSER ||= $ENV{AS_BROWSER};
 unless ($BROWSER) {
     if (IS_WIN32) {
 	$BROWSER = "start %s";
