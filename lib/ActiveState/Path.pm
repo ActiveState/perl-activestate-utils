@@ -178,6 +178,7 @@ sub _unsymlinked {
 	$path = join_path(dirname($path), $link);
 	last unless -l $path;
     }
+    Carp::croak("Dangling symlink for $orig_path") unless -e _;
     return $path;
 }
 

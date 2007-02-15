@@ -3,7 +3,7 @@
 use Test qw(plan ok skip);
 use strict;
 
-plan tests => 38;
+plan tests => 40;
 use ActiveState::Path qw(find_prog path_list realpath is_abs_path abs_path join_path rel_path unsymlinked);
 
 use Config qw(%Config);
@@ -69,6 +69,7 @@ if ($Config{d_symlink}) {
     symlink("loop1", "$dir/loop2");
 
     symlink("..", "$dir/d/back");
+    symlink("does/not/exist", "$dir/d/dangling");
 
     my $dir_abs = abs_path($dir);
 
@@ -87,6 +88,9 @@ if ($Config{d_symlink}) {
 
     ok(realpath("$dir/d/back/d/back/d/back"), $dir_abs);
     ok(abs_path("$dir/d/back/d/back/d/back"), "$dir_abs/d/back/d/back/d/back");
+
+    ok(eval { realpath("$dir/d/dangling") }, undef);
+    ok($@ =~ /^Dangling symlink for/);
 
     use File::Path qw(rmtree);
     rmtree($dir, 1);
