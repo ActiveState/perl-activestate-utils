@@ -24,7 +24,7 @@ print $MF <<HEADER;
 CC = $Config{cc}
 AR = $Config{ar}
 LD = $Config{ld}
-CFLAGS = $Config{ccflags} $Config{cccdlflags} -I. -g
+CFLAGS = $Config{ccflags} $Config{optimize} $Config{cccdlflags} -I. -g
 LIB_EXT = $Config{lib_ext}
 OBJ_EXT = $Config{obj_ext}
 MAKE = $Config{make}
