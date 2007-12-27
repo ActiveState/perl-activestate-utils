@@ -33,6 +33,10 @@ Interactive questions.
 
 A simple but elegant way to time portions of your applications.
 
+=head2 ActiveState::Version
+
+Version comparison functions.
+
 =head1 COPYRIGHT
 
-Copyright (c) 2002, ActiveState Corporation. All Rights Reserved.
+Copyright (c) 2002-2007, ActiveState Corporation. All Rights Reserved.

@@ -36,6 +36,7 @@ lib/ActiveState/Prompt.pm
 lib/ActiveState/Run.pm
 lib/ActiveState/StopWatch.pm
 lib/ActiveState/Table.pm
+lib/ActiveState/Version.pm
 lib/ActiveState/Unix/Crontab.pm
 lib/ActiveState/Unix/DiskFree.pm
 lib/ActiveState/Unix/Network.pm
