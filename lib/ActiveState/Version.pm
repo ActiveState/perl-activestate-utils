@@ -1,9 +1,11 @@
 package ActiveState::Version;
 
-use vars qw(@EXPORT_OK @ISA);
+use strict;
 
-@ISA = qw(Exporter);
-@EXPORT_OK = qw(vcmp vge vgt vle vlt veq);
+our $VERSION = 1.0;
+
+use base 'Exporter';
+our @EXPORT_OK = qw(vcmp vge vgt vle vlt veq);
 
 =head1 NAME
 
@@ -15,20 +17,20 @@ ActiveState::Version - Utility functions for version comparison
  my $x = "0.9.9_beta";
  my $y = "0.10";
  my $z = "0.1";
- 
+
  print "$x is ", (vgt($x, y) ? "greater" : "less"), "than $y.\n";
  print "$y and $z are ", (veq($y, $z) ? "" : " not "), "equal.\n";
- 
+
  my @sorted = sort { vcmp($a, $b) } ($x, $y, $z);
- 
- print "The newest version is ", $sorted[$#sorted], ".\n";
+
+ print "The newest version is ", $sorted[-1], ".\n";
 
 =head1 DESCRIPTION
 
 Handy utilities for uniform version comparison across various
-AS apps.
+ActiveState applications.
 
-Provides C<vcmp>, C<vge>, C<vgt>, C<vle>, C<vlt>, C<veq>, all 
+Provides C<vcmp>, C<vge>, C<vgt>, C<vle>, C<vlt>, C<veq>, all
 of which perform comparisons equivalent to the similarly named
 perl operators.
 
