@@ -14,16 +14,17 @@ ActiveState::Version - Utility functions for version comparison
 =head1 SYNOPSIS
 
  use ActiveState::Version qw(vgt veq vcmp);
+
  my $x = "0.9.9_beta";
  my $y = "0.10";
  my $z = "0.1";
 
- print "$x is ", (vgt($x, y) ? "greater" : "less"), "than $y.\n";
+ print "$x is ", (vgt($x, y) ? "greater" : "less or equal"), "than $y.\n";
  print "$y and $z are ", (veq($y, $z) ? "" : " not "), "equal.\n";
 
  my @sorted = sort { vcmp($a, $b) } ($x, $y, $z);
 
- print "The newest version is ", $sorted[-1], ".\n";
+ print "The newest version is $sorted[-1].\n";
 
 =head1 DESCRIPTION
 
