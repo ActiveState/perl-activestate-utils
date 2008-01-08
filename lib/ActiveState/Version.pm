@@ -59,6 +59,17 @@ sub vcmp ($$) {
     my @b = split(/[-_.p]/, $v2);
 
     for (\@a, \@b) {
+	# The /-r\d+/ suffix if used by PPM to denote local changes
+	# and should always go into the 4th part of the version tupel.
+	# As an extension, we will just strip the 'r' if the version
+	# already has 4 or more parts.
+	if ($_->[-1] =~ /^r(\d+)$/) {
+	    pop @$_;
+	    push @$_, 0 while @$_ < 3;
+	    push @$_, $1;
+	    next;
+	}
+
         my $num;
         if ($_->[-1] =~ s/([a-z])$//) {
             my $a = $1;

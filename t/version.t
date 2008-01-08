@@ -14,6 +14,10 @@ my @versions =
      1.0a
      1.1
      1.1.0.1
+     1.1-r2
+     1.1-r3
+     1.1.1.1-r3
+     1.1.1-r3
      1.1001_01
      1.1002
      1.1100
@@ -21,7 +25,7 @@ my @versions =
      2.0.12d
 );
 
-plan(tests => (@versions * @versions + 3));
+plan(tests => (@versions * @versions + 5));
 
 require_ok( 'ActiveState::Version' );
 
@@ -34,3 +38,6 @@ foreach my $x (0 .. $#versions) {
 
 is(ActiveState::Version::vcmp('1.a.2', '1.a.2'), 0, "1.a.2 == 1.a.3");
 is(ActiveState::Version::vcmp('1.a.2', '1.a.3'), -1, "1.a.2 < 1.a.3");
+
+is(ActiveState::Version::vcmp('1.2.3.4', '1.2.3-r4'), 0, "1.2.3.4 == 1.2.3-r4");
+is(ActiveState::Version::vcmp('1.2.3.4', '1.2.3-r3'), 1, "1.2.3.4 > 1.2.3-r3");
