@@ -99,8 +99,9 @@ sub vcmp ($$) {
         my $a = @a ? shift(@a) : 0;
         my $b = @b ? shift(@b) : 0;
         unless ($a =~ /^-?\d+$/ && $b =~ /^-?\d+$/) {
-            return 0 if $a eq $b;
+            next if $a eq $b;
             return undef;
+
         }
         if (my $cmp = $a <=> $b) {
             return $cmp;
