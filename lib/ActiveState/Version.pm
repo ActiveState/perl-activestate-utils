@@ -60,7 +60,7 @@ sub vcmp ($$) {
 
     for (\@a, \@b) {
 	# The /-r\d+/ suffix if used by PPM to denote local changes
-	# and should always go into the 4th part of the version tupel.
+	# and should always go into the 4th part of the version tuple.
 	# As an extension, we will just strip the 'r' if the version
 	# already has 4 or more parts.
 	if ($_->[-1] =~ /^r(\d+)$/) {
