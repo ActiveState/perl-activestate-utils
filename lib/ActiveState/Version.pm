@@ -55,8 +55,8 @@ sub vcmp ($$) {
     for ($v1, $v2) {
         s/^v//;
     }
-    my @a = split(/[-_.p]/, $v1);
-    my @b = split(/[-_.p]/, $v2);
+    my @a = split(/[-_.]/, $v1);
+    my @b = split(/[-_.]/, $v2);
 
     for (\@a, \@b) {
 	# The /-r\d+/ suffix if used by PPM to denote local changes
@@ -81,20 +81,23 @@ sub vcmp ($$) {
             }
         }
 
-        if (!defined($num) && $_->[-1] =~ s/(a|alpha|b|beta|pre|rc|RC)(\d*)$//) {
+        if (!defined($num) && $_->[-1] =~ s/(a|alpha|b|beta|p|patch|pre|rc|RC)(\d*)$//) {
             my $kind;
-            ($kind, $num) = ($1, $2);
+            ($kind, $num) = (lc $1, $2);
             $num ||= 0;
-            $num -= {
+            my $offset = {
                a => 400,
                alpha => 400,
                b => 300,
                beta => 300,
+	       p => 0,
+	       patch => 0,
                pre => 200,
                rc => 100,
-            }->{lc($kind)} || die;
+            };
+	    die unless defined $offset->{$kind};
+	    $num -= $offset->{$kind};
         }
-
 
         if (defined $num) {
             if (length($_->[-1])) {
@@ -106,6 +109,7 @@ sub vcmp ($$) {
         }
     }
 
+    # { local $" = '.'; print "$v1=@a $v2=@b\n"; }
     while (@a || @b) {
         my $a = @a ? shift(@a) : 0;
         my $b = @b ? shift(@b) : 0;
