@@ -38,6 +38,8 @@ my @versions =
      1.1100
      2
      2.0.12d
+     5.008002
+     5.10.0
 );
 
 plan(tests => (@versions * @versions + 5));
