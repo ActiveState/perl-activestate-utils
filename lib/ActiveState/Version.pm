@@ -54,6 +54,11 @@ sub vcmp ($$) {
     # assume dotted form
     for ($v1, $v2) {
         s/^v//;
+	# Turn 5.010001 into 5.10.1
+	if (/^(\d+)\.(\d\d\d)(\d\d\d)$/) {
+	    $_ = join('.', $1, $2, $3);
+	    s/\.0+(\d+)/.$1/g;
+	}
     }
     my @a = split(/[-_.]/, $v1);
     my @b = split(/[-_.]/, $v2);
