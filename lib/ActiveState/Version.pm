@@ -64,6 +64,8 @@ sub vcmp ($$) {
     my @b = split(/[-_.]/, $v2);
 
     for (\@a, \@b) {
+        next unless @$_;
+
 	# The /-r\d+/ suffix if used by PPM to denote local changes
 	# and should always go into the 4th part of the version tuple.
 	# As an extension, we will just strip the 'r' if the version

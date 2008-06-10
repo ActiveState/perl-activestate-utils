@@ -42,7 +42,7 @@ my @versions =
      5.10.0
 );
 
-plan(tests => (@versions * @versions + 5));
+plan(tests => (@versions * @versions + 6));
 
 require_ok( 'ActiveState::Version' );
 
@@ -58,3 +58,5 @@ is(ActiveState::Version::vcmp('1.a.2', '1.a.3'), -1, "1.a.2 < 1.a.3");
 
 is(ActiveState::Version::vcmp('1.2.3.4', '1.2.3-r4'), 0, "1.2.3.4 == 1.2.3-r4");
 is(ActiveState::Version::vcmp('1.2.3.4', '1.2.3-r3'), 1, "1.2.3.4 > 1.2.3-r3");
+
+ok(ActiveState::Version::vlt('', '5.55'), "'' < 5.55");
