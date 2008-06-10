@@ -1,6 +1,6 @@
 abstract: ActiveState's utility modules
 name: ActiveState-Utils
-version: 2.3
+version: 2.5
 author: ActiveState <support@activestate.com>
 requires:
     Time::HiRes: 1.0

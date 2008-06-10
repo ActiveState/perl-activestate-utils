@@ -2,7 +2,7 @@ package ActiveState::Version;
 
 use strict;
 
-our $VERSION = 1.1;
+our $VERSION = '1.2';
 
 use base 'Exporter';
 our @EXPORT_OK = qw(vcmp vge vgt vle vlt veq);
