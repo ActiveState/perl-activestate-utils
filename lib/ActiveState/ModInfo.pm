@@ -9,6 +9,7 @@ our @EXPORT_OK = qw(
     open_inc open_module
     fixup_module_case
     parse_version
+    module_version
 );
 
 use File::Find qw(find);
@@ -165,6 +166,61 @@ sub parse_version {
     close($fh);
 
     return $result;
+}
+
+sub module_version {
+    my $filename = shift;
+    open(my $fh, "<", $filename) || return;
+
+    # scan the module
+    local $_;
+    my $pkg;
+    my $vers;
+    my $inpod = 0;
+    while (<$fh>) {
+        $inpod = /^=(?!cut)/ ? 1 : /^=cut/ ? 0 : $inpod;
+        next if $inpod || /^\s*#/;
+        if (/^package\s*([\w:]+)/) {
+            $pkg = $1;
+        }
+        elsif (/([\$*])(([\w\:\']*)\bVERSION)\b.*\=(.*)/) {
+            my $val = $4;
+            unless ($pkg) {
+                last unless $3;
+                $pkg = $3;
+                $pkg =~ s/(::\w+)::$/$1/;
+            }
+            # Avoid losing trailing '0's on numeric assignments like
+            # "$VERSION = 1.10"
+            if ($val =~ /^\s*(\d+(\.\d*)?)\s*;/) {
+                $vers = $1;
+                last;
+            }
+            # Borrowed from ExtUtils::MM_Unix
+            my $eval = qq{
+                 package Dummy::_version;
+                 no strict;
+                 local $1$2;
+                 \$$2=undef; do {
+                      $_
+                 }; \$$2
+            };
+            local $^W;
+            $vers = eval($eval);
+            $vers =~ s/\s+$//;
+            last;
+        }
+    }
+    close($fh);
+
+    return unless $pkg && $vers;
+
+    if ($vers =~ m/^[\x00-\x0F]/ && length($vers) <= 4) {
+        # assume v-string
+        $vers = sprintf "%vd", $vers;
+    }
+
+    return ($pkg, $vers);
 }
 
 sub fixup_module_case {
@@ -356,6 +412,10 @@ Return the $VERSION of a module using the official ExtUtils::MakeMaker
 algorithm.  This is a slightly modified copy of the MakeMaker
 function.  The main difference is that it returns a real C<undef> if
 no version number is found and do it without producing any warning.
+
+=item ($module, $vers) = module_version( $filename )
+
+Return the module name and its version number from a file.
 
 =back
 
