@@ -1,6 +1,9 @@
 package ActiveState::ModInfo;
 
 use strict;
+
+our $VERSION = '1.01';
+
 use base 'Exporter';
 our @EXPORT_OK = qw(
     list_modules
