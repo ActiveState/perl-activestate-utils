@@ -1,5 +1,7 @@
 package ActiveState::Duration;
 
+our $VERSION = "1.00";
+
 use strict;
 use base 'Exporter';
 
@@ -13,7 +15,7 @@ push(@factor, 1);
 for (@unit_f) {
     push(@factor, $factor[-1] * $_);
 }
-    
+
 sub _dur_breakup {
     my($dur, $prec, $frac_part) = @_;
     $prec = 0.05 unless defined($prec);
