@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-BEGIN { plan tests => 52 }
+BEGIN { plan tests => 53 }
 
 use ActiveState::Duration qw(dur_format_sm dur_format_iso dur_format_eng ago_eng dur_format_clock dur_parse);
 
@@ -19,13 +19,14 @@ ok(dur_format_iso(5_000_000), "P8W");
 ok(dur_format_eng(58), "1 minute");
 ok(dur_format_eng(2*61), "2 minutes");
 ok(dur_format_eng(60*60), "1 hour");
+ok(dur_format_eng(60*(2*60 + 23)), "2 hours and 30 minutes");
 ok(dur_format_eng(5_000_000), "8 weeks");
 
 ok(ago_eng(0), "just now");
 ok(ago_eng(-1), "1 second from now");
 ok(ago_eng(1), "1 second ago");
 ok(ago_eng(70), "1 minute and 10 seconds ago");
-ok(ago_eng(70, 0.1), "1 minute and 10 seconds ago");
+ok(ago_eng(70, 0.1), "1 minute and 15 seconds ago");
 ok(ago_eng(70, 0.01), "1 minute and 10 seconds ago");
 ok(ago_eng(70, 0.1, "first"), "1.2 minutes ago");
 ok(ago_eng(70, 0.01, "first"), "1.17 minutes ago");

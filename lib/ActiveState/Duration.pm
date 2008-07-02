@@ -31,17 +31,24 @@ sub _dur_breakup {
     my $res = 0;
     my @res;
 
+ UNIT:
     for my $i (reverse 0 .. @factor - 1) {
 	my $u = $d / $factor[$i];
-	my $ui = int($u + 0.5);  # round
 
-	if (abs($res + $ui * $factor[$i] - $dur) / $dur <= $prec) {
-	    # close enough
-	    push(@res, [$ui => $unit[$i]]);
-	    last;
-	}
+        my @div = (1);
+        for (10, 15, 30) {
+            unshift(@div, $_) if $unit_f[$i] && $unit_f[$i] % $_ == 0;
+        }
+        for my $div (@div) {
+            my $ui = int($u / $div + 0.5) * $div;
+            if (abs($res + $ui * $factor[$i] - $dur) / $dur <= $prec) {
+                # close enough
+                push(@res, [$ui => $unit[$i]]);
+                last UNIT;
+            }
+        }
 
-	$ui = int $u;
+	my $ui = int $u;
 	if ($frac_part eq $unit[$i] || ($ui && $frac_part eq "first")) {
 	    my $uf;
 	    for my $dec (1 .. 6) {
@@ -49,7 +56,7 @@ sub _dur_breakup {
 		last if abs($res + $uf * $factor[$i] - $dur) / $dur <= $prec;
 	    }
 	    push(@res, [$uf => $unit[$i]]);
-	    last;
+	    last UNIT;
 	}
 	elsif ($ui) {
 	    push(@res, [$ui => $unit[$i]]);
