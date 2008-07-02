@@ -36,9 +36,7 @@ sub _dur_breakup {
 	my $u = $d / $factor[$i];
 
         my @div = (1);
-        for (10, 15, 30) {
-            unshift(@div, $_) if $unit_f[$i] && $unit_f[$i] % $_ == 0;
-        }
+        unshift(@div, 30, 10, 5) if ($unit_f[$i] || 0) == 60;
         for my $div (@div) {
             my $ui = int($u / $div + 0.5) * $div;
             if (abs($res + $ui * $factor[$i] - $dur) / $dur <= $prec) {

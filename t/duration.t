@@ -25,12 +25,12 @@ ok(dur_format_eng(5_000_000), "8 weeks");
 ok(ago_eng(0), "just now");
 ok(ago_eng(-1), "1 second from now");
 ok(ago_eng(1), "1 second ago");
-ok(ago_eng(70), "1 minute and 10 seconds ago");
-ok(ago_eng(70, 0.1), "1 minute and 15 seconds ago");
-ok(ago_eng(70, 0.01), "1 minute and 10 seconds ago");
-ok(ago_eng(70, 0.1, "first"), "1.2 minutes ago");
-ok(ago_eng(70, 0.01, "first"), "1.17 minutes ago");
-ok(ago_eng(70, 0.001, "first"), "1.167 minutes ago");
+ok(ago_eng(71), "1 minute and 10 seconds ago");
+ok(ago_eng(71, 0.1), "1 minute and 10 seconds ago");
+ok(ago_eng(71, 0.01), "1 minute and 11 seconds ago");
+ok(ago_eng(71, 0.1, "first"), "1.2 minutes ago");
+ok(ago_eng(71, 0.01, "first"), "1.18 minutes ago");
+ok(ago_eng(71, 0.001, "first"), "1.183 minutes ago");
 ok(ago_eng(5_000_000, 0.01), "8 weeks and 2 days ago");
 ok(ago_eng(5_000_000, 0.001, "day"), "8 weeks and 1.9 days ago");
 
