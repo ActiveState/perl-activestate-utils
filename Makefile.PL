@@ -26,6 +26,6 @@ sub MY::libscan {
     return '' if $path =~ /Utils\.pod$/;
     return '' if $path =~ /X11TestServer|UTF8/;
     return '' if $^O eq "MSWin32" && $path =~ /Unix/;
-    return '' if $path =~ /(P4|X11TestServer|Install).pm$/;
+    return '' if $path =~ /(P4|Distfiles|X11TestServer|Install).pm$/;
     return $path;
 }
