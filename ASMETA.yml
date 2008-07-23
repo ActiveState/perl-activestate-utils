@@ -4,6 +4,7 @@ version: 2.5
 author: ActiveState <support@activestate.com>
 requires:
     Time::HiRes: 1.0
+    LWP::UserAgent: 0
 requires_on_mswin32:
     Win32::Job: 0
 mm_fullext: ActiveState/Utils
