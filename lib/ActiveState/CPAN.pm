@@ -90,7 +90,12 @@ sub clear_cache {
     my $self = shift;
     return unless $self->{cache};
     require File::Path;
-    File::Path::rmtree($self->{cache}, {keep_root => 1});
+    if (opendir(my $dh, $self->{cache})) {
+        while (defined(my $f = readdir($dh))) {
+            next if $f eq "." || $f eq "..";
+            File::Path::rmtree("$self->{cache}$f");
+        }
+    }
 }
 
 sub _cache_expire {
