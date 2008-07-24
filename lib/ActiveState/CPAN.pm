@@ -390,7 +390,7 @@ sub unpack {
     mkdir($dir, 0755) || die "Can't mkdir $dir: $!";
     eval {
         print STDERR "Unpacking $file..." if $self->{verbose};
-        system("(cd $dir && tar xzf -) <$file") == 0 || die "Can't untar $file";
+        system("(cd $dir && gunzip -c | tar xf -) <$file") == 0 || die "Can't untar $file";
         print STDERR "done\n" if $self->{verbose};
         opendir(my $dh, $dir) || die "Can't opendir $dir: $!";
         my @f = grep !/^\.\.?\z/, readdir($dh);
