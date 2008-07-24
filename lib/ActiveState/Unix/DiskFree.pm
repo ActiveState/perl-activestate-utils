@@ -27,7 +27,7 @@ sub df {
 	    $first = 0;
 	    s/\s+/ /g;
 	    die "Unrecongnized df output format: '$_'"
-		unless /^Filesystem 1(?:024|K)-blocks Used Avail(?:able)? Capacity Mounted on$/;
+		unless /^Filesystem 1(?:024|[Kk])-blocks Used Avail(?:able)? (Use%|Capacity) Mounted on$/;
 	}
 	else {
 	    my($fs, $total, $used, $free, $used_p, $root) = split(' ', $_, 6);
