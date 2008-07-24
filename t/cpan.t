@@ -45,10 +45,15 @@ eval {
 };
 ok($@);
 
-my $d = $cpan->unpack("authors/id/G/GA/GAAS/libwww-perl-5.808.tar.gz");
-ok($d, "libwww-perl-5.808");
-ok(-f "libwww-perl-5.808/lib/LWP.pm");
-ok(rmtree("libwww-perl-5.808"));
+if ($^O eq "MSWin32") {
+    skip("Depends on Unix shell stuff", 1) for 1..3;
+}
+else {
+    my $d = $cpan->unpack("authors/id/G/GA/GAAS/libwww-perl-5.808.tar.gz");
+    ok($d, "libwww-perl-5.808");
+    ok(-f "libwww-perl-5.808/lib/LWP.pm");
+    ok(rmtree("libwww-perl-5.808"));
+}
 
 $cpan->clear_cache;
 ok(rmdir($cache));
