@@ -5,7 +5,7 @@ use strict;
 our $VERSION = '1.2';
 
 use base 'Exporter';
-our @EXPORT_OK = qw(vcmp vge vgt vle vlt veq);
+our @EXPORT_OK = qw(vcmp vge vgt vle vlt veq vnumify);
 
 =head1 NAME
 
@@ -34,6 +34,10 @@ ActiveState applications.
 Provides C<vcmp>, C<vge>, C<vgt>, C<vle>, C<vlt>, C<veq>, all
 of which perform comparisons equivalent to the similarly named
 perl operators.
+
+Also provides the V<vnumify> function which turns any version string
+to a floating point number.  For version strings that are gibberish it
+returns 0.
 
 =cut
 
@@ -130,6 +134,15 @@ sub vcmp ($$) {
         }
     }
     return 0;
+}
+
+sub vnumify {
+    my $v = shift;
+    return 0 unless $v;
+    return $v if !ref($v) && $v =~ /^\d+(?:\.\d+)?\z/;
+    require version;
+    $v = version->new($v);
+    return $v->numify;
 }
 
 1;

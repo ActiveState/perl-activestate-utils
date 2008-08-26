@@ -42,7 +42,7 @@ my @versions =
      5.10.0
 );
 
-plan(tests => (@versions * @versions + 6));
+plan(tests => (@versions * @versions + 6 + 8));
 
 require_ok( 'ActiveState::Version' );
 
@@ -60,3 +60,15 @@ is(ActiveState::Version::vcmp('1.2.3.4', '1.2.3-r4'), 0, "1.2.3.4 == 1.2.3-r4");
 is(ActiveState::Version::vcmp('1.2.3.4', '1.2.3-r3'), 1, "1.2.3.4 > 1.2.3-r3");
 
 ok(ActiveState::Version::vlt('', '5.55'), "'' < 5.55");
+
+use ActiveState::Version qw(vnumify);
+use version qw(qv);
+
+is(vnumify(undef), 0, 'vnumify tests');
+is(vnumify(""), 0);
+is(vnumify("0"), 0);
+is(vnumify("3.3"), "3.3");
+is(vnumify("3.3.3"), "3.003003");
+is(vnumify(qv("3.3")), "3.003000");
+is(vnumify(version->new("3.3")), "3.300");
+is(vnumify("foo"), "0.000");
