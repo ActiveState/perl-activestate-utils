@@ -35,7 +35,7 @@ Provides C<vcmp>, C<vge>, C<vgt>, C<vle>, C<vlt>, C<veq>, all
 of which perform comparisons equivalent to the similarly named
 perl operators.
 
-Also provides the V<vnumify> function which turns any version string
+Also provides the C<vnumify> function which turns any version string
 to a floating point number.  For version strings that are gibberish it
 returns 0.
 
