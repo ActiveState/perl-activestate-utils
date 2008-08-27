@@ -78,13 +78,24 @@ sub _vtuple {
     my $v = shift;
     $v = "0" if !defined($v) || $v eq "";
 
-    $v =~ s/^v//;
-
-    # Turn 5.010001 into 5.10.1
-    if ($v =~ /^(\d+)\.(\d\d\d)(\d\d\d)$/) {
-        $v = join('.', $1, $2, $3);
-        $v =~ s/\.0+(\d+)/.$1/g;
+    unless ($v =~ s/^v//) {
+        if ($v =~ /^(\d+)\.(\d+)(_\d+)?\z/) {
+            my $g;
+            if (length($2) == 4) {
+                # Turn 5.0102 into 5.1.2
+                $g = 2;
+            }
+            elsif (length($2) % 3 == 0) {
+                # Turn 5.010001 into 5.10.1
+                $g = 3;
+            }
+            if ($g) {
+                $v = join(".", $1, map substr($2, $_*$g, $g), 0 .. (length($2) / $g - 1));
+                $v .= $3 if $3;
+            }
+        }
     }
+
     my @v = split(/[-_.]/, $v);
 
     # The /-r\d+/ suffix if used by PPM to denote local changes
@@ -140,15 +151,13 @@ sub _vtuple {
 sub _vnorm {
     my @v = @_;
     my $i = @v - 1;
-    while ($i) {
-        if ($v[$i] < 0) {
+    while ($i >= 0) {
+        $v[$i] =~ s/^0+(\d)/$1/;
+        if ($i && $v[$i] < 0) {
             $v[$i] = 1000 + $v[$i];
             $v[$i - 1]--;
-            $i--;
         }
-        else {
-            last;
-        }
+        $i--;
     }
     return @v;
 }

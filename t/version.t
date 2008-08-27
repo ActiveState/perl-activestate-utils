@@ -42,7 +42,7 @@ my @versions =
      5.10.0
 );
 
-plan(tests => (@versions * @versions + 6 + 7 + 8));
+plan(tests => (@versions * @versions + 6 + 12 + 8));
 
 require_ok( 'ActiveState::Version' );
 
@@ -71,6 +71,11 @@ is(vnorm("1.1a2"), "v1.0.602");
 is(vnorm("1.1rc2"), "v1.0.902");
 is(vnorm("1.1rc3"), "v1.0.903");
 is(vnorm("1.1a"), 'v1.1.1');
+is(vnorm("5.0102"), "v5.1.2");
+is(vnorm("0.2802_01"), "v0.28.2.1");
+is(vnorm("5.005_02"), "v5.5.2");
+is(vnorm("5.010000"), "v5.10.0");
+is(vnorm("5.001002003004"), "v5.1.2.3.4");
 
 is(vnumify(undef), 0, 'vnumify tests');
 is(vnumify(""), 0);
