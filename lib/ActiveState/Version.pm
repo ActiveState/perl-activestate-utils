@@ -2,7 +2,7 @@ package ActiveState::Version;
 
 use strict;
 
-our $VERSION = '1.2';
+our $VERSION = '1.3';
 
 use base 'Exporter';
 our @EXPORT_OK = qw(vcmp vge vgt vle vlt veq vnorm vnumify);
@@ -160,6 +160,7 @@ sub _vnorm {
     my $i = @v - 1;
     while ($i >= 0) {
         $v[$i] =~ s/^0+(\d)/$1/;
+        $v[$i] = 0 unless $v[$i] =~ /^-?\d+\z/;
         if ($i && $v[$i] < 0) {
             $v[$i] = 1000 + $v[$i];
             $v[$i - 1]--;
@@ -176,10 +177,21 @@ sub vnorm {
 sub vnumify {
     my $v = shift;
     return 0 unless $v;
-    return $v if !ref($v) && $v =~ /^\d+(?:\.\d+)?\z/;
-    require version;
-    $v = version->new($v);
-    return $v->numify;
+    if (UNIVERSAL::isa($v, "version")) {
+        $v = $v->numify;
+        $v =~ s/_//;  # why do they do this?
+        #$v =~ s/(\.\d+?)0+\z/$1/;  # trim trailing zeros
+        return $v;
+    }
+    return $v if $v =~ /^\d+(?:\.\d+)?\z/;
+    return "$1$2" if $v =~ /^(\d+\.\d+)_(\d+)\z/;
+    my @v = _vnorm(_vtuple($v));
+    my $first = shift(@v);
+    return $first unless @v;
+    for (@v) {
+        $_ = 999 if $_ > 999;
+    }
+    return join("", "$first.", map { sprintf "%03d", $_ } @v);
 }
 
 1;

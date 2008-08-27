@@ -62,7 +62,7 @@ my @versions =
      5.10.0
 );
 
-plan(tests => (@versions * @versions + 5 + 12 + 8));
+plan(tests => (@versions * @versions + 5 + 21 + 8));
 
 use ActiveState::Version qw(vcmp vlt vnorm vnumify);
 
@@ -97,8 +97,17 @@ use version qw(qv);
 is(vnumify(undef), 0, 'vnumify tests');
 is(vnumify(""), 0);
 is(vnumify("0"), 0);
+is(vnumify("foo"), "0");
 is(vnumify("3.3"), "3.3");
+is(vnumify("v3.3"), "3.003");
 is(vnumify("3.3.3"), "3.003003");
 is(vnumify(qv("3.3")), "3.003000");
 is(vnumify(version->new("3.3")), "3.300");
-is(vnumify("foo"), "0.000");
+is(vnumify(version->new("5.005_03")), "5.005030");
+is(vnumify("0.2808"), "0.2808");
+is(vnumify("0.2808_01"), "0.280801");
+is(vnumify("v0.2808_01"), "0.999001"); # information loss
+is(vnumify("1.2j"), "1.002010");
+is(vnumify("1.0rc2"), "0.999902");
+is(vnumify("2008-08-03"), "2008.008003");
+is(vnumify("5.8.8.824.287078"), "5.008008824999");  # information loss
