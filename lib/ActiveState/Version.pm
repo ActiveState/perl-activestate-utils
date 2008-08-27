@@ -119,7 +119,7 @@ sub _vtuple {
         }
     }
 
-    if (!defined($num) && $v[-1] =~ s/(a|alpha|b|beta|p|patch|pre|rc|RC)(\d*)$//) {
+    if (!defined($num) && $v[-1] =~ s/(a|alpha|b|beta|gamma|delta|p|patch|m|maint|pre|rc|RC|trial|TRIAL|mt)(\d*)$//) {
         my $kind;
         ($kind, $num) = (lc $1, $2);
         $num ||= 0;
@@ -128,10 +128,17 @@ sub _vtuple {
             alpha => 400,
             b => 300,
             beta => 300,
+            gamma => 290,
+            delta => 280,
 	    p => 0,
 	    patch => 0,
+            m => 0,
+            maint => 0,
             pre => 200,
             rc => 100,
+            t => 100,
+            trial => 100,
+            mt => 100,
         };
 	die unless defined $offset->{$kind};
 	$num -= $offset->{$kind};

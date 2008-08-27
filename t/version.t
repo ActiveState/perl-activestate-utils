@@ -38,31 +38,46 @@ my @versions =
      1.1100
      2
      2.0.12d
+     5.000alpha1
+     5.000alpha10
+     5.000beta1
+     5.000beta3
+     5.000gamma
+     5.000
+     5.000a
+     5.000m
+     5.001
+     5.002gamma
+     5.002delta
+     5.002
+     5.003_97
+     5.003_97j
+     5.005_50
+     5.6.1-TRIAL1
+     5.6.1-TRIAL2
+     5.6.1
+     5.6.2-RC1
+     5.6.2
      5.008002
      5.10.0
 );
 
-plan(tests => (@versions * @versions + 6 + 12 + 8));
+plan(tests => (@versions * @versions + 5 + 12 + 8));
 
-require_ok( 'ActiveState::Version' );
+use ActiveState::Version qw(vcmp vlt vnorm vnumify);
 
 foreach my $x (0 .. $#versions) {
     foreach my $y (0 .. $#versions) {
-        is(ActiveState::Version::vcmp($versions[$x], $versions[$y]), $x <=> $y,
+        is(vcmp($versions[$x], $versions[$y]), $x <=> $y,
 	   "($versions[$x] <=> $versions[$y]) = " . ($x <=> $y));
     }
 }
 
-is(ActiveState::Version::vcmp('1.a.2', '1.a.2'), 0, "1.a.2 == 1.a.3");
-is(ActiveState::Version::vcmp('1.a.2', '1.a.3'), -1, "1.a.2 < 1.a.3");
-
-is(ActiveState::Version::vcmp('1.2.3.4', '1.2.3-r4'), 0, "1.2.3.4 == 1.2.3-r4");
-is(ActiveState::Version::vcmp('1.2.3.4', '1.2.3-r3'), 1, "1.2.3.4 > 1.2.3-r3");
-
-ok(ActiveState::Version::vlt('', '5.55'), "'' < 5.55");
-
-use ActiveState::Version qw(vnorm vnumify);
-use version qw(qv);
+is(vcmp('1.a.2', '1.a.2'), 0, "1.a.2 == 1.a.3");
+is(vcmp('1.a.2', '1.a.3'), -1, "1.a.2 < 1.a.3");
+is(vcmp('1.2.3.4', '1.2.3-r4'), 0, "1.2.3.4 == 1.2.3-r4");
+is(vcmp('1.2.3.4', '1.2.3-r3'), 1, "1.2.3.4 > 1.2.3-r3");
+ok(vlt('', '5.55'), "'' < 5.55");
 
 is(vnorm(undef), 'v0', 'vnorm tests');
 is(vnorm(""), 'v0');
@@ -76,6 +91,8 @@ is(vnorm("0.2802_01"), "v0.28.2.1");
 is(vnorm("5.005_02"), "v5.5.2");
 is(vnorm("5.010000"), "v5.10.0");
 is(vnorm("5.001002003004"), "v5.1.2.3.4");
+
+use version qw(qv);
 
 is(vnumify(undef), 0, 'vnumify tests');
 is(vnumify(""), 0);
