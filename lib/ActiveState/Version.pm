@@ -5,7 +5,7 @@ use strict;
 our $VERSION = '1.2';
 
 use base 'Exporter';
-our @EXPORT_OK = qw(vcmp vge vgt vle vlt veq vnumify);
+our @EXPORT_OK = qw(vcmp vge vgt vle vlt veq vnorm vnumify);
 
 =head1 NAME
 
@@ -55,70 +55,8 @@ sub vcmp ($$) {
     # can we compare the version numbers as floats
     # return $v1 <=> $v2 if $v1 =~ /^\d+\.\d+$/ && $v2 =~ /^\d+\.\d+$/;
 
-    # assume dotted form
-    for ($v1, $v2) {
-        s/^v//;
-	# Turn 5.010001 into 5.10.1
-	if (/^(\d+)\.(\d\d\d)(\d\d\d)$/) {
-	    $_ = join('.', $1, $2, $3);
-	    s/\.0+(\d+)/.$1/g;
-	}
-    }
-    my @a = split(/[-_.]/, $v1);
-    my @b = split(/[-_.]/, $v2);
-
-    for (\@a, \@b) {
-        next unless @$_;
-
-	# The /-r\d+/ suffix if used by PPM to denote local changes
-	# and should always go into the 4th part of the version tuple.
-	# As an extension, we will just strip the 'r' if the version
-	# already has 4 or more parts.
-	if ($_->[-1] =~ /^r(\d+)$/) {
-	    pop @$_;
-	    push @$_, 0 while @$_ < 3;
-	    push @$_, $1;
-	    next;
-	}
-
-        my $num;
-        if ($_->[-1] =~ s/([a-z])$//) {
-            my $a = $1;
-            if ($_->[-1] eq "" || $_->[-1] =~ /^\d+$/) {
-                $num = ord($a) - ord('a') + 1;
-            }
-            else {
-                $_->[-1] .= $a;
-            }
-        }
-
-        if (!defined($num) && $_->[-1] =~ s/(a|alpha|b|beta|p|patch|pre|rc|RC)(\d*)$//) {
-            my $kind;
-            ($kind, $num) = (lc $1, $2);
-            $num ||= 0;
-            my $offset = {
-               a => 400,
-               alpha => 400,
-               b => 300,
-               beta => 300,
-	       p => 0,
-	       patch => 0,
-               pre => 200,
-               rc => 100,
-            };
-	    die unless defined $offset->{$kind};
-	    $num -= $offset->{$kind};
-        }
-
-        if (defined $num) {
-            if (length($_->[-1])) {
-                push(@$_, $num);
-            }
-            else {
-                $_->[-1] = $num;
-            }
-        }
-    }
+    my @a = _vtuple($v1);
+    my @b = _vtuple($v2);
 
     # { local $" = '.'; print "$v1=@a $v2=@b\n"; }
     while (@a || @b) {
@@ -134,6 +72,89 @@ sub vcmp ($$) {
         }
     }
     return 0;
+}
+
+sub _vtuple {
+    my $v = shift;
+    $v = "0" if !defined($v) || $v eq "";
+
+    $v =~ s/^v//;
+
+    # Turn 5.010001 into 5.10.1
+    if ($v =~ /^(\d+)\.(\d\d\d)(\d\d\d)$/) {
+        $v = join('.', $1, $2, $3);
+        $v =~ s/\.0+(\d+)/.$1/g;
+    }
+    my @v = split(/[-_.]/, $v);
+
+    # The /-r\d+/ suffix if used by PPM to denote local changes
+    # and should always go into the 4th part of the version tuple.
+    # As an extension, we will just strip the 'r' if the version
+    # already has 4 or more parts.
+    if ($v[-1] =~ /^r(\d+)$/) {
+        pop @v;
+        push @v, 0 while @v < 3;
+        push @v, $1;
+    }
+
+    my $num;
+    if ($v[-1] =~ s/([a-z])$//) {
+        my $a = $1;
+        if ($v[-1] eq "" || $v[-1] =~ /^\d+$/) {
+            $num = ord($a) - ord('a') + 1;
+        }
+        else {
+            $v[-1] .= $a;
+        }
+    }
+
+    if (!defined($num) && $v[-1] =~ s/(a|alpha|b|beta|p|patch|pre|rc|RC)(\d*)$//) {
+        my $kind;
+        ($kind, $num) = (lc $1, $2);
+        $num ||= 0;
+        my $offset = {
+            a => 400,
+            alpha => 400,
+            b => 300,
+            beta => 300,
+	    p => 0,
+	    patch => 0,
+            pre => 200,
+            rc => 100,
+        };
+	die unless defined $offset->{$kind};
+	$num -= $offset->{$kind};
+    }
+
+    if (defined $num) {
+        if (length($v[-1])) {
+            push(@v, $num);
+        }
+        else {
+            $v[-1] = $num;
+        }
+    }
+    return @v;
+}
+
+sub _vnorm {
+    my @v = @_;
+    my $i = @v - 1;
+    while ($i) {
+        if ($v[$i] < 0) {
+            $v[$i] = 1000 + $v[$i];
+            $v[$i - 1]--;
+            $i--;
+        }
+        else {
+            last;
+        }
+    }
+    return @v;
+}
+
+sub vnorm {
+    return "v" . join(".", _vnorm(_vtuple(@_)));
 }
 
 sub vnumify {
