@@ -46,6 +46,7 @@ sub list_modules {
     my @modules;
     my %seen;
     for my $dir (@inc) {
+        next unless -d $dir;
 	find(sub {
 	    if ($File::Find::name ne $dir && $inc{_canon_file($File::Find::name)}) {
 		#warn "Will not traverse $File::Find::name from $dir\n";
