@@ -28,7 +28,7 @@ ok(file_name_is_absolute($t));
 ok(is_abs_path($t));
 ok(realpath("t/path.t"), catfile($t, "path.t"));
 ok(!eval { realpath("notthere") });
-ok($@ =~ /^The path 'notthere' is not valid/);
+ok($@ =~ /^The path 'notthere' is not valid at/);
 
 $t = abs_path("t");
 ok(is_abs_path($t));

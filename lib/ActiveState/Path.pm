@@ -152,13 +152,13 @@ sub unsymlinked {
 sub realpath {
     my $path = shift;
     if (IS_WIN32) {
-        Carp::croak("The path '$path' is not valid\n") unless -e $path;
+        Carp::croak("The path '$path' is not valid") unless -e $path;
         return scalar(Win32::GetFullPathName($path));
     }
 
     lstat($path);  # prime tests on '_'
 
-    Carp::croak("The path '$path' is not valid\n") unless -e _;
+    Carp::croak("The path '$path' is not valid") unless -e _;
     return Cwd::realpath($path) if -d _;
 
     $path = _unsymlinked($path) if -l _;
