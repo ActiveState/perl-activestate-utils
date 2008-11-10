@@ -1,6 +1,6 @@
 package ActiveState::Table;
 
-our $VERSION = "0.02";
+our $VERSION = "1.00";
 
 use strict;
 use Carp qw(carp);
