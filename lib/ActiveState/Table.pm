@@ -58,7 +58,7 @@ sub add_field {
 sub add_row {
     my $self = shift;
     my $row = shift;
-    return add_row([$row, @_]) unless ref($row);
+    $row = [$row, @_] unless ref($row);
 
     if (ref($row) eq "HASH") {
 	my @row;

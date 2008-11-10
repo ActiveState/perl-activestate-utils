@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-plan tests => 40;
+plan tests => 41;
 
 use ActiveState::Table;
 
@@ -156,5 +156,12 @@ a,b
 10,1
 9,NULL
 EOT
+
+$t = ActiveState::Table->new;
+eval {
+    $t->add_row(a => 10, b => 1);
+};
+ok($@);
+
 
 sub j { join(":", @_) }
