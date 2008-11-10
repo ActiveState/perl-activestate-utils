@@ -81,6 +81,19 @@ sub add_row {
     }
 }
 
+sub add_sep {
+    my($self, $idx) = @_;
+    $idx = @{$self->{rows}} - 1 unless defined $idx;
+    $self->{sep_f} ||= do {
+	my $h = $self->{sep_idx} = {};
+	sub {
+	    my $row = shift;
+	    return $h->{$row};
+	};
+    };
+    $self->{sep_idx}{$idx}++;
+}
+
 sub sort {
     my $self = shift;
     my $comparator = shift;
@@ -142,6 +155,7 @@ sub as_box {
     $show_trailer = 1 unless defined $show_trailer;
 
     my $rows = $self->rows;
+    my $sep_f = $self->{sep_f};
     my @out;
     if (my @title = $self->fields) {
 	@title = ("") x @title unless $show_header;
@@ -201,6 +215,9 @@ sub as_box {
 	    for (@field) { $_ = $null unless defined }
 	    _stretch(\@field, \@w, \@align, $box_chars);
 	    push(@out, "$I$PAD", join("$PAD$I$PAD", @field), "$PAD$I\n");
+	    if ($sep_f && $i < $max && $sep_f->($i)) {
+		push(@out, _lines($sep, $box_chars))
+	    }
 	}
 	$sep =~ tr/asd/zxc/;
 	push(@out, _lines($sep, $box_chars));
@@ -356,6 +373,15 @@ automatically in sorted order.  To enforce an order add the fields
 before adding rows.
 
 There is no return value.
+
+=item $t->add_sep
+
+=item $t->add_sep( $index )
+
+This adds a separator to the table, shown as a horizonal line in the
+as_box() output.  If $index is provided the separator will appear
+after the given row, otherwise the separator will appear after last
+row added.
 
 =item $t->sort( $comparator )
 

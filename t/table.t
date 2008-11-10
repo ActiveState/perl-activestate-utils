@@ -3,7 +3,7 @@
 use strict;
 use Test qw(plan ok);
 
-plan tests => 41;
+plan tests => 42;
 
 use ActiveState::Table;
 
@@ -156,6 +156,27 @@ a,b
 10,1
 9,NULL
 EOT
+
+$t = ActiveState::Table->new;
+$t->add_row({a => 10, b => 1});
+$t->add_row({a => 11, b => 1});
+$t->add_sep;
+$t->add_row({a => 12, b => 1});
+$t->add_row({a => 13, b => 1});
+
+ok($t->as_box, <<EOT);
++----+---+
+| a  | b |
++----+---+
+| 10 | 1 |
+| 11 | 1 |
++----+---+
+| 12 | 1 |
+| 13 | 1 |
++----+---+
+  (4 rows)
+EOT
+
 
 $t = ActiveState::Table->new;
 eval {
