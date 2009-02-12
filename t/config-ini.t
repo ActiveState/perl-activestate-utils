@@ -2,7 +2,7 @@
 
 use strict;
 use Test;
-plan tests => 43, todo => [];
+plan tests => 44, todo => [];
 
 use ActiveState::Config::INI;
 
