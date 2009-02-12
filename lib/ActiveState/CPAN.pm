@@ -415,7 +415,7 @@ sub unpack {
             require Cwd;
             my $zip = Archive::Zip->new;
             $zip->read(Cwd::abs_path($file)) == Archive::Zip::AZ_OK() or die "Can't read zip file $file";
-            my $cwd = Cwd::cwd;
+            my $cwd = Cwd::cwd();
             chdir($dir) or die "Can't chdir into $dir: $!";
             $zip->extractTree() == Archive::Zip::AZ_OK() or die "Can't unzip $file into $dir";
             chdir($cwd) or die "Can't chdir into $cwd: $!";
