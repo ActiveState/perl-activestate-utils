@@ -175,6 +175,8 @@ sub parse_version {
 
 sub module_version {
     my $filename = shift;
+    return unless $filename =~ /(\w+)\.pm$/;
+    my $basename = $1;
     open(my $fh, "<", $filename) || return;
 
     # scan the module
@@ -185,31 +187,39 @@ sub module_version {
     while (<$fh>) {
         $inpod = /^=(?!cut)/ ? 1 : /^=cut/ ? 0 : $inpod;
         next if $inpod || /^\s*#/;
-        if (/^package\s*([\w:]+)/) {
+        if (/^\s*package\s*([\w:]+)/) {
             $pkg = $1;
         }
-        elsif (/([\$*])(([\w\:\']*)\bVERSION)\b.*\=(.*)/) {
-            my $val = $4;
-            unless ($pkg) {
-                last unless $3;
-                $pkg = $3;
-                $pkg =~ s/(::\w+)::$/$1/;
-            }
-            # Avoid losing trailing '0's on numeric assignments like
-            # "$VERSION = 1.10"
-            if ($val =~ /^\s*(\d+(\.\d*)?)\s*;/) {
-                $vers = $1;
-                last;
-            }
+        elsif (/([\$*])(([\w\:\']*)\bVERSION)\b.*?\=(.*)/) {
             # Borrowed from ExtUtils::MM_Unix
             my $eval = qq{
-                 package Dummy::_version;
+                 package ExtUtils::MakeMaker::_version;
                  no strict;
                  local $1$2;
                  \$$2=undef; do {
                       $_
                  }; \$$2
             };
+
+            my $val = $4;
+            if ($3) {
+                $pkg = $3;
+                $pkg =~ s/::$//;
+            }
+
+            unless ($pkg && $basename eq (split /::/, $pkg)[-1]) {
+                undef($pkg);
+                next;
+            }
+
+            # Avoid losing trailing '0's on numeric assignments like
+            # "$VERSION = 1.10"
+            if ($val =~ /^\s*(\d+(\.\d*)?)\s*;/) {
+                $vers = $1;
+                last;
+            }
+
+            # let's try to run the $eval
             local $^W;
             $vers = eval($eval);
             $vers =~ s/\s+$//;
