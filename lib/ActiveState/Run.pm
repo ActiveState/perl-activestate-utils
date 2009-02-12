@@ -2,7 +2,7 @@ package ActiveState::Run;
 
 use strict;
 
-our $VERSION = '1.01';
+our $VERSION = '1.02';
 
 use base 'Exporter';
 our @EXPORT_OK = qw(run run_ex shell_quote decode_status);

@@ -6,7 +6,7 @@ use ActiveState::Handy qw(file_content);
 use ActiveState::CPAN::Utils qw($PKG_EXT);
 require IO::Handle;  # for flush
 
-our $VERSION = "0.01";
+our $VERSION = "1.00";
 
 # cache (file system, partial mirror)
 # mirror

@@ -3,7 +3,7 @@ package ActiveState::ModInfo;
 use strict;
 
 # XXX Setting our $VERSION here breaks the "eval $eval" in parse_version().
-# our $VERSION = '1.01';
+# our $VERSION = '1.02';
 
 use base 'Exporter';
 our @EXPORT_OK = qw(
