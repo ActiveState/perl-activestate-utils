@@ -168,14 +168,22 @@ sub run_ex {
                 require Time::HiRes;
                 my $before = Time::HiRes::time();
                 my $killed_softly;
+                my $killed_hard;
                 while (1) {
                     select(undef, undef, undef, 0.5);
                     #print "Checking on $pid...\n";
                     $tail_f->() if $tee;
                     last if waitpid($pid, POSIX::WNOHANG()) == $pid;
-                    if ($killed_softly) {
+                    if ($killed_hard) {
+                        if (++$killed_hard > 5) {
+                            # give up the wait
+                            die "Process $pid refuse to die";
+                        }
+                    }
+                    elsif ($killed_softly) {
                         _echo_cmd("kill", "-9", $pid) unless $silent;
                         kill +($new_group ? -9 : 9), $pid;
+                        $killed_hard++;
                     }
                     else {
                         my $kill;
@@ -194,58 +202,67 @@ sub run_ex {
             }
         }
         else {
-            if ($stdin) {
-                open(STDIN, "<&", $stdin)
-                    unless fileno(STDIN) != fileno($stdin);
-            }
-            else {
-                open(STDIN, "<", "/dev/null");
-            }
-
-            if ($output) {
-                open(STDOUT, ">", $output) || die "Can't open '$output': $!";
-                open(STDERR, ">&STDOUT") || die "Can't redirect STDERR: $!";
-            }
-
-            if ($env_hide) {
-                for my $k (@$env_hide) {
-                    delete $ENV{$k};
+            local $SIG{__DIE__};
+            eval {
+                if ($stdin) {
+                    open(STDIN, "<&", $stdin)
+                        unless fileno(STDIN) != fileno($stdin);
                 }
-            }
-
-            if ($env) {
-                while (my($k, $v) = each %$env) {
-                    $ENV{$k} = $v;
+                else {
+                    open(STDIN, "<", "/dev/null");
                 }
-            }
 
-            if (%ulimit || $nice) {
-                require BSD::Resource;
-                BSD::Resource::setpriority() if $nice;
-                while (my($k, $v) = each %ulimit) {
-                    no strict 'refs';
-                    my $limit = &{"BSD::Resource::RLIMIT_" . uc($k)}();
-                    BSD::Resource::setrlimit($limit, $v, $v);
+                if ($output) {
+                    open(STDOUT, ">", $output) || die "Can't open '$output': $!";
+                    open(STDERR, ">&STDOUT") || die "Can't redirect STDERR: $!";
                 }
-            }
 
-            if ($new_group) {
+                if ($env_hide) {
+                    for my $k (@$env_hide) {
+                        delete $ENV{$k};
+                    }
+                }
+
+                if ($env) {
+                    while (my($k, $v) = each %$env) {
+                        $ENV{$k} = $v;
+                    }
+                }
+
+                if ($new_group) {
+                    require POSIX;
+                    POSIX::setsid() || die "Can't start new group: $!";
+                }
+
+                if (%ulimit || $nice) {
+                    require BSD::Resource;
+                    BSD::Resource::setpriority() if $nice;
+                    while (my($k, $v) = each %ulimit) {
+                        no strict 'refs';
+                        my $limit = &{"BSD::Resource::RLIMIT_" . uc($k)}();
+                        BSD::Resource::setrlimit($limit, $v, $v);
+                    }
+                }
+
+                if ($cwd) {
+                    chdir($cwd) || die "Can't chdir '$cwd': $!";
+                    $ENV{PWD} = $cwd if exists $ENV{PWD};
+                }
+
+                if ($exe) {
+                    exec $exe @$cmd;
+                }
+                else {
+                    exec @$cmd;
+                }
+            };
+            print STDERR $@ || "exec failed: $!\n";
+            eval {
+                # want to avoid perl destructors from running in child
                 require POSIX;
-                POSIX::setsid() || die "Can't start new group: $!";
-            }
-
-            if ($cwd) {
-                chdir($cwd) || die "Can't chdir '$cwd': $!";
-                $ENV{PWD} = $cwd if exists $ENV{PWD};
-            }
-
-            if ($exe) {
-                exec $exe @$cmd;
-            }
-            else {
-                exec @$cmd;
-            }
-            exit 1;
+                POSIX::_exit(1);
+            };
+            exit 1;  # if POSIX fails to load
         }
     }
 
