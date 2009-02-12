@@ -395,7 +395,7 @@ sub unpack {
 
             my $tar = Archive::Tar->new;
             $tar->read($file, 1);
-            my $cwd = Cwd::cwd;
+            my $cwd = Cwd::cwd();
             chdir($dir) or die "Can't chdir into $dir: $!";
             if ($^O eq "MSWin32") {
                 # XXX The code in Archive::Tar that converts symlinks to ordinary copies
