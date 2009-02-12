@@ -378,8 +378,6 @@ sub get_file {
 
 sub unpack {
     my($self, $path, $dir) = @_;
-    $path =~ /\.(?:tgz|tar\.gz)\z/ || die "Only tar.gz files";  # XXX for now
-    die "Depends on Unix shell stuff, stopped" if $^O eq "MSWin32";
     unless ($dir) {
         $dir = $path;
         $dir =~ s/$PKG_EXT//;
@@ -390,9 +388,43 @@ sub unpack {
     die "Can't obtain file reference for $path" unless $file;
     mkdir($dir, 0755) || die "Can't mkdir $dir: $!";
     eval {
-        print STDERR "Unpacking $file..." if $self->{verbose};
-        system("(cd $dir && gunzip -c | tar xf -) <$file") == 0 || die "Can't untar $file";
-        print STDERR "done\n" if $self->{verbose};
+        print "Unpacking $file..." if $self->{verbose};
+        if ($file =~ /\.(?:tar\.gz|tgz)\z/) {
+            require Archive::Tar;
+            require Cwd;
+
+            my $tar = Archive::Tar->new;
+            $tar->read($file, 1);
+            my $cwd = Cwd::cwd;
+            chdir($dir) or die "Can't chdir into $dir: $!";
+            if ($^O eq "MSWin32") {
+                # XXX The code in Archive::Tar that converts symlinks to ordinary copies
+                # seems to be broken, so don't extract symlinks for now.
+                # Also man pages containing "::" in the filename are invalid on Windows.
+                $tar->extract(
+                    grep { !$_->is_symlink && $_->full_path !~ /:/ } $tar->get_files
+	        );
+            }
+            else {
+                $tar->extract();
+            }
+            chdir($cwd) or die "Can't chdir into $cwd: $!";;
+        }
+        elsif ($file =~ /\.zip/) {
+            require Archive::Zip;
+            require Cwd;
+            my $zip = Archive::Zip->new;
+            $zip->read(Cwd::abs_path($file)) == Archive::Zip::AZ_OK() or die "Can't read zip file $file";
+            my $cwd = Cwd::cwd;
+            chdir($dir) or die "Can't chdir into $dir: $!";
+            $zip->extractTree() == Archive::Zip::AZ_OK() or die "Can't unzip $file into $dir";
+            chdir($cwd) or die "Can't chdir into $cwd: $!";
+        }
+        else {
+            die "Don't know how to unpack $file, stopped";
+        }
+        print "done\n" if $self->{verbose};
+
         opendir(my $dh, $dir) || die "Can't opendir $dir: $!";
         my @f = grep !/^\.\.?\z/, readdir($dh);
         closedir($dh);
@@ -409,6 +441,7 @@ sub unpack {
             }
         }
     };
+
     if ($@) {
         my $err = $@;
         require File::Path;
