@@ -2,7 +2,7 @@ package ActiveState::Path;
 
 use strict;
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 use Exporter ();
 our @ISA = qw(Exporter);
