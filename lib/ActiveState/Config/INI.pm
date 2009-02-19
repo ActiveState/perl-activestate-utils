@@ -108,7 +108,7 @@ sub insert_line {
     push(@{$self->{lines}}, $nl) while @{$self->{lines}} < $idx;
     $line .= $nl unless $line =~ /\n\z/;
     splice(@{$self->{lines}}, $idx, 0, $line);
-    $self->_adjust_line_numbers($self, $idx, 1);
+    $self->_adjust_line_numbers($idx, 1);
 }
 
 sub _adjust_line_numbers {

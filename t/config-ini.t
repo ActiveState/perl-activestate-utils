@@ -2,7 +2,7 @@
 
 use strict;
 use Test;
-plan tests => 44, todo => [];
+plan tests => 45, todo => [];
 
 use ActiveState::Config::INI;
 
@@ -178,4 +178,15 @@ ok($conf->content, <<EOT);
 # this is a comment
 # foo=42
 [baz]
+EOT
+
+# A bug that Jeff stumbled upon
+$conf = ActiveState::Config::INI->new;
+$conf->property("RegularExpressions::RequireExtendedFormatting", "minimum_regex_length_to_complain_about", 0);
+$conf->property("RegularExpressions::RequireExtendedFormatting", "strict", 1);
+$conf->property("RegularExpressions::RequireExtendedFormatting", "minimum_regex_length_to_complain_about", 2);
+ok($conf->content(<<EOT));
+[RegularExpressions::RequireExtendedFormatting]
+strict = 1
+minimum_regex_length_to_complain_about = 2
 EOT
