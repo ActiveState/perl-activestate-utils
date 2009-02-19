@@ -3,7 +3,7 @@
 use Test qw(plan ok skip);
 use strict;
 
-plan tests => 40;
+plan tests => 47;
 use ActiveState::Path qw(find_prog path_list realpath is_abs_path abs_path join_path rel_path unsymlinked);
 
 use Config qw(%Config);
@@ -33,12 +33,20 @@ ok($@ =~ /^The path 'notthere' is not valid at/);
 $t = abs_path("t");
 ok(is_abs_path($t));
 ok(abs_path("t/path.t"), "$t/path.t");
+substr($t, -1, 0) = ".";
+ok(abs_path(".t"), "$t");
 
 ok(realpath("t"), abs_path("t"));  # should be same since "t" is not a symlink
 
 ok(join_path("t", "path.t"), catfile("t", "path.t"));
 ok(join_path("t", "."), "t");
+ok(join_path("t", "./"), "t");
+ok(join_path("t", "./."), "t");
+ok(join_path("t", ".f"), "t/.f");
+ok(join_path("t", "..f"), "t/..f");
+ok(join_path("t", "...f"), "t/...f");
 ok(join_path("t", ".."), ".");
+ok(join_path("t", "../"), ".");
 ok(join_path("t", "../x"), "x");
 
 my $root = ($^O eq "MSWin32") ? "C:\\" : "/";

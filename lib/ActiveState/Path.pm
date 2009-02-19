@@ -85,7 +85,7 @@ sub join_path {
 
 sub _join_path {
     my($base, $path) = @_; # $path assumed to be relative
-    while ($path =~ s,^(\.\.?)$PATH_SEP_RE?,,o) {
+    while ($path =~ s,^(\.\.?)(:?$PATH_SEP_RE|\z),,o) {
 	$base = dirname(unsymlinked($base)) if $1 eq "..";
     }
     if (length($path)) {
