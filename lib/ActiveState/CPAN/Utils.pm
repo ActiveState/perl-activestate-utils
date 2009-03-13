@@ -13,7 +13,22 @@ sub distname_info {
     my $path = shift;
     my @a = split(/[\/\\]/, $path);
     my $name = pop(@a);
-    my $author = (@a && $a[0] eq "authors") ? $a[4] : undef;
+    my $author;
+    if (@a) {
+	if ($a[0] eq "authors") {
+	    $author = $a[4];
+	}
+	elsif (@a >= 3 &&
+	       $a[0] =~ /^([A-Z])\z/ &&
+	       $a[1] =~ /^($1[A-Z])\z/ &&
+	       $a[2] =~ /^$1[A-Z]+\z/)
+	{
+	    $author = $a[2];
+	}
+	elsif ($a[0] =~ /^[A-Z]+\z/) {
+	    $author = $a[0];
+	}
+    }
     my $extension = ($name =~ s/$PKG_EXT//) ? $1 : "";
     my $version = ($name =~ s/-([^-]+)$//) ? $1 : "";
     if (length $version) {

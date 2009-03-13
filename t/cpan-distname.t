@@ -3,7 +3,7 @@
 use strict;
 use Test;
 
-plan tests => 186;
+plan tests => 195;
 
 use ActiveState::CPAN::Utils qw(distname_info);
 
@@ -360,25 +360,36 @@ authors/id/J/JA/JASONS/XML-Xerces-2.7.0-0.tar.gz
 authors/id/D/DY/DYACOB/Zobel-0.20-100701.tar.gz
   n: Zobel
   v: 0.20-100701
+  author: DYACOB
 
 RSOLIV/mysql-genocide_0.01.tar.gz
   n: mysql-genocide
   v: 0.01
+  author: RSOLIV
 
 DJPADZ/finance-yahooquote_0.19.tar.gz
   n: finance-yahooquote
   v: 0.19
+  author: DJPADZ
 
 EIKEG/doc/perl-tutorial_1.0.tar.gz
   n: perl-tutorial
   v: 1.0
+  author: EIKEG
 
 TIMB/perl5.004_04.tar.gz
   n: perl
   v: 5.004_04
+  author: TIMB
 
 Foo-Bar
   name: Foo-Bar
   version:
   author: ~
   ext:
+
+G/GA/GAAS/mylib-1.02.tar.gz
+  name: mylib
+  version: 1.02
+  author: GAAS
+  ext: tar.gz

@@ -108,6 +108,23 @@ sub run_ex {
 	}
     };
 
+    my $kill_reason;
+    my $should_kill = sub {
+	my $before = shift;
+	if ($limit_output && -s $output > $limit_output) {
+	    my $limit = ($limit_output >= 1024 * 1024)
+		? sprintf "%.1f MB", $limit_output / (1024 * 1024)
+		: "$limit_output bytes";
+	    $kill_reason = "Too much output (limit is $limit)";
+	    return 1;
+	}
+        if ($limit_time && (Time::HiRes::time() - $before) > $limit_time) {
+	    $kill_reason = "Timeout (max run time is ${limit_time}s)";
+	    return 1;
+	}
+	return 0;
+    };
+
     if ($^O eq "MSWin32") {
 	my $output_fh;
 	if ($output) {
@@ -146,9 +163,7 @@ sub run_ex {
 	    my $before = Time::HiRes::time();
 	    $job->watch(sub {
 		$tail_f->() if $tee;
-                return 1 if $limit_output && -s $output > $limit_output;
-                return 1 if $limit_time && (Time::HiRes::time() - $before) > $limit_time;
-                return 0;  # continue
+		return $should_kill->($before);
             }, 1);
         }
 	else {
@@ -186,10 +201,7 @@ sub run_ex {
                         $killed_hard++;
                     }
                     else {
-                        my $kill;
-                        $kill ||= $limit_time && (Time::HiRes::time() - $before) > $limit_time;
-                        $kill ||= $limit_output && -s $output > $limit_output;
-                        if ($kill) {
+                        if ($should_kill->($before)) {
                             _echo_cmd("kill", "-15", $pid) unless $silent;
                             kill +($new_group ? -15 : 15), $pid;
                             $killed_softly++;
@@ -267,7 +279,11 @@ sub run_ex {
     }
 
     if ($? && !$ignore_err) {
-        Carp::croak(($exe || $cmd->[0]) . " " . decode_status())
+        Carp::croak(
+	    ($kill_reason ? "$kill_reason\n" : "") .
+	    ($exe || $cmd->[0]) .
+	    " " . decode_status()
+	)
     }
 
     return $?;
@@ -487,11 +503,14 @@ Kill the process (or the process group if C<new_group> was specified)
 if it output file grows bigger than the specified number of mega
 bytes.  No effect unless C<output> was specified.
 
-=item limit_XXX => $seconds
+=item limit_cpu => $seconds
 
-Other limits might also be passed which will set how much resources
-the process is allowed to use.  See C<BSD::Resource> for allowed
-values.  Also consult the C<ulimit> command in you shell.
+=item limit_XXX => $megabytes
+
+Other limits might also be passed which will set how much resources the process
+is allowed to use.  The unit for all size limits are megabytes.  See
+C<BSD::Resource> for allowed values.  Also consult the C<ulimit> command in you
+shell.
 
 =back
 
