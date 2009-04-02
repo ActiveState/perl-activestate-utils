@@ -5,6 +5,9 @@ author: ActiveState <support@activestate.com>
 requires:
     Time::HiRes: 1.0
     LWP::UserAgent: 0
+    Compress::Zlib: 0
+    Archive::Tar: 0
+    Archive::Zip: 0
     version: 0
 requires_on_mswin32:
     Win32::Job: 0
