@@ -88,8 +88,9 @@ sub list_modules {
 sub _canon_file {
     my $f = shift;
     if ($^O eq "MSWin32") {
-      $f = lc($f);
-      $f =~ s,\\,/,g;
+	$f = Win32::GetLongPathName($f);
+	$f = lc($f);
+	$f =~ s,\\,/,g;
     }
     return $f;
 }
