@@ -49,7 +49,7 @@ sub _read {
                 disabled => $2 || "",
             }
         }
-        elsif (/^((\s*)(#\s*)?([^=]+?)\s*=\s*)(.*?)\s*$/ ) {
+        elsif (/^((\s*)(#\s*)?([^=]+?)\s*=[ \t]*)(.*?)\s*$/ ) {
             my $h = $self->{sect}{$cur_sect}{prop}{$4} = {
                 line => $line,
                 col => length($2),

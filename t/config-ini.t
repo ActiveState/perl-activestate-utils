@@ -2,7 +2,7 @@
 
 use strict;
 use Test;
-plan tests => 45, todo => [];
+plan tests => 46, todo => [];
 
 use ActiveState::Config::INI;
 
@@ -195,4 +195,20 @@ ok($conf->content(<<EOT));
 [RegularExpressions::RequireExtendedFormatting]
 strict = 1
 minimum_regex_length_to_complain_about = 2
+EOT
+
+# http://bugs.activestate.com/show_bug.cgi?id=85602
+$conf = ActiveState::Config::INI->new;
+$conf->content(<<EOT);
+[Parameters]
+Prop1 = aaa
+Prop2 = 
+Prop3 = ccc
+EOT
+$conf->property( "Parameters", "Prop2" => "bbb");
+_ok($conf->content, <<EOT);
+[Parameters]
+Prop1 = aaa
+Prop2 = bbb
+Prop3 = ccc
 EOT
