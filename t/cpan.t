@@ -24,13 +24,13 @@ $info = $cpan->package_info("authors/id/N/NI/NI-S/Tk800.024.tar.gz");
 ok($info->{name}, "Tk");
 ok($info->{version}, "800.024");
 
-my $next = $cpan->files_iter(matching => qr/libwww-perl-5\.808/);
+my $next = $cpan->files_iter(matching => qr/libwww-perl-5\.834/);
 my $count = 0;
 while (my $f = $next->()) {
     print "$f\n";
     $count++;
 }
-ok($count, 2);
+ok($count, 3);
 
 
 my $cache = "xx-cpan-cache.d";
