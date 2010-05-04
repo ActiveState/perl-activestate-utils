@@ -36,7 +36,8 @@ ok($count, 3);
 my $cache = "xx-cpan-cache.d";
 die "Cache $cache exists" if -e $cache;
 $cpan = ActiveState::CPAN->new(cache => $cache, verbose => 0);
-my $f = $cpan->get_file("authors/id/G/GA/GAAS/IO-String-1.08.tar.gz");
+# This test intentionally requests a distribution that is *only* on BackPAN
+my $f = $cpan->get_file("authors/id/G/GA/GAAS/Digest-1.00.tar.gz");
 print "$f\n";
 ok($f);
 
