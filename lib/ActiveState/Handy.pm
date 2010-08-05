@@ -12,6 +12,7 @@ our @EXPORT_OK = qw(
     iso_date iso_datetime
     xml_esc xml_clean
     cp_tree cp_files
+    stringf
 );
 
 # legacy
@@ -148,6 +149,28 @@ sub xml_clean {
     return $_;
 }
 
+sub stringf {
+    local $_ = shift;
+    my %p = ("%" => "%", "n" => "\n", "t" => "\t", @_);
+    s/(%(-?)(\d*)(?:\.(\d*))?(?:{(.*?)})?(\S))/_fmt(\%p, $1, $2, $3, $4, $5, $6)/ge;
+    return $_;
+}
+
+sub _fmt {
+    my($p, $orig, $left, $min, $max, $arg, $c) = @_;
+    return $orig unless exists $p->{$c};
+    my $v = $p->{$c};
+    $v = $v->($arg) if ref($v) eq "CODE";
+    return substr($v, 0, $max) if $max && $max < length $v;
+    $min ||= 0;
+    $min -= length $v;
+    if ($min > 0) {
+        my $pad = " " x $min;
+        $v = $left ? "$v$pad" : "$pad$v";
+    }
+    return $v;
+}
+
 1;
 
 =head1 NAME
@@ -236,6 +259,10 @@ element.
 
 Will remove control characters so it can be embedded as text in an XML
 element. Does not perform escaping.
+
+=item stringf( $format, %hash )
+
+printf-style template expansion compatible with the L<String::Format> module.
 
 =back
 
