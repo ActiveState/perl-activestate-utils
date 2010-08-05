@@ -3,7 +3,7 @@
 use Test;
 plan tests => 6;
 
-use String::Format;
+use ActiveState::Handy qw(stringf);
 
 my %fruit = (
     'a' => "apples",
