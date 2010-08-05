@@ -11,7 +11,7 @@ else {
 
 WriteMakefile(
     NAME	 => 'ActiveState::Utils',
-    VERSION	 => '2.05',
+    VERSION	 => '2.07',
     DIR		 => $DIR,
     PREREQ_PM    => { 'Time::HiRes' => 1 },
     ($] ge '5.006' ? (
