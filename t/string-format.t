@@ -21,7 +21,7 @@ my %args = (
     d => sub { use POSIX; POSIX::strftime($_[0], localtime) },
 );
 
-my $s = stringf("It is %{%M:%S}d right now, on %{%A, %B %e}d.", %args);
+my $s = stringf("It is %{%M:%S}d right now, on %{%A, %B %d}d.", %args);
 print "# $s\n";
 ok($s, qr/^It is \d\d:\d\d right now, on .* \d+\.\z/);
 
