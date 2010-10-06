@@ -71,7 +71,7 @@ sub new {
         $cache .= "/" unless $cache =~ m,/$,;
     }
 
-    my $backpan = delete $opt{backpan} || "http://backpan.cpan.org/";
+    my $backpan = delete $opt{backpan} || ($ASINTRA ? "http://backpan.nas.activestate.com/" : "http://backpan.cpan.org/");
     my $verbose = delete $opt{verbose};
     $verbose = 1 unless defined($verbose);
 
