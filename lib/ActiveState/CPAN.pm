@@ -6,7 +6,7 @@ use ActiveState::Handy qw(file_content);
 use ActiveState::CPAN::Utils qw($PKG_EXT);
 require IO::Handle;  # for flush
 
-our $VERSION = "1.00";
+our $VERSION = "1.01";
 
 my $ASINTRA = gethostbyname("cpan.nas.activestate.com");
 
