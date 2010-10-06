@@ -71,7 +71,21 @@ sub new {
         $cache .= "/" unless $cache =~ m,/$,;
     }
 
-    my $backpan = delete $opt{backpan} || ($ASINTRA ? "http://backpan.nas.activestate.com/" : "http://backpan.cpan.org/");
+    my $backpans;
+    if (exists $opt{backpan}) {
+        $backpans = delete $opt{backpan} || [];
+	$backpans = [$backpans] unless ref($backpans) eq "ARRAY";
+        for my $m (@$backpans) {
+	    $m .= "/" unless $m =~ m,/$,;
+        }
+    }
+    else {
+	$backpans = [
+	     $ASINTRA ? ("http://backpan.nas.activestate.com/") : (),
+             "http://backpan.cpan.org/",
+        ];
+    }
+
     my $verbose = delete $opt{verbose};
     $verbose = 1 unless defined($verbose);
 
@@ -83,7 +97,7 @@ sub new {
         cache => $cache,
         remote_mirrors => \@remote_mirrors,
         local_mirror => $local_mirror,
-        backpan => $backpan,
+        backpans => $backpans,
         verbose => $verbose,
     }, $class;
     return $self;
@@ -474,10 +488,11 @@ sub _get_remote {
         }
     }
 
-    if ($self->{backpan}) {
-        my $uri = $self->{backpan} . $path;
-        my $res = $save_as ? $ua->save($uri, $save_as) : get($uri);
-        return $res if $res->is_success;
+    for my $base (@{$self->{backpans}}) {
+	my $uri = $base . $path;
+	my $res = $save_as ? $ua->save($uri, $save_as) : $ua->get($uri);
+	return $res if $res->is_success;
+	last if $res->code == 404;
     }
 
     return undef;
@@ -621,6 +636,9 @@ file system path names for all CPAN paths.
 
 Give the URL of the backpan server to use to fetch files that have
 expired from CPAN.  The default is "http://backpan.cpan.org/".
+
+An explict C<undef> can be passed to disable the fallback
+on Backpan.
 
 =item verbose => $bool
 

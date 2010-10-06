@@ -3,7 +3,7 @@
 use strict;
 use Test;
 
-plan tests => 17;
+plan tests => 18;
 use ActiveState::CPAN;
 use File::Path qw(rmtree);
 
@@ -40,6 +40,13 @@ $cpan = ActiveState::CPAN->new(cache => $cache, verbose => 0);
 my $f = $cpan->get_file("authors/id/G/GA/GAAS/Digest-1.00.tar.gz");
 print "$f\n";
 ok($f);
+
+{
+my $cpan_without_backpan = ActiveState::CPAN->new(verbose => 0, backpan => undef);
+# This test intentionally requests a distribution that is *only* on BackPAN
+my $f = $cpan_without_backpan->get_file("authors/id/G/GA/GAAS/Digest-1.00.tar.gz");
+ok($f, undef);
+}
 
 eval {
      $cpan->unpack("authors/id/G/GA/GAAS/libwww-perl-5.834.readme");
