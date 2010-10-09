@@ -6,7 +6,7 @@ if ($^O eq "MSWin32") {
     push @$DIR, "Win32-Shell";
 }
 else {
-    push @$DIR, "File-Atomic";
+    push @$DIR, "File-Atomic" unless $^O eq "hpux" && $Config{use64bitint};
 }
 
 WriteMakefile(
