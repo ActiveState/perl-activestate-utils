@@ -5,7 +5,7 @@ my $DIR = [];
 if ($^O eq "MSWin32") {
     push @$DIR, "Win32-Shell";
 }
-else {
+elsif (($ENV{AS_PERL_PRODUCT} || "") =~ /Enterprise/ && $] < 5.012) {
     push @$DIR, "File-Atomic" unless $^O eq "hpux" && $Config{use64bitint};
 }
 
