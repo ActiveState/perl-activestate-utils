@@ -4,7 +4,7 @@ version: 2.9
 author: ActiveState <support@activestate.com>
 requires:
     Time::HiRes: 1.0
-#   LWP::UserAgent: 0
+    LWP::UserAgent: 0
     Compress::Zlib: 0
     Archive::Tar: 0
     Archive::Zip: 0
