@@ -3,7 +3,7 @@
 use strict;
 use Test;
 
-plan tests => 195;
+plan tests => 198;
 
 use ActiveState::CPAN::Utils qw(distname_info);
 
@@ -393,3 +393,8 @@ G/GA/GAAS/mylib-1.02.tar.gz
   version: 1.02
   author: GAAS
   ext: tar.gz
+
+SADAHIRO/Unicode-Collate-0.73-withoutworldwriteables.tar.gz
+  name: Unicode-Collate
+  version: 0.73
+  author: SADAHIRO

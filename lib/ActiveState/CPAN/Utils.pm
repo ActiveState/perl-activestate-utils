@@ -37,6 +37,7 @@ sub distname_info {
             # GRICHTER/HTTP-Webdav-0.1.18-0.17.1
             # PFEIFFER/makepp-1.50-cvs-080517
             $version = "$1-$version";
+	    $version =~ s/-withoutworldwriteables$//;
         }
         elsif ($version =~ /^\d+$/ && $name =~ s/-(\d+(?:-\d+)*)$//) {
             # MIKO/String-Util-0-11
