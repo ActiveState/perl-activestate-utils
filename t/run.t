@@ -5,6 +5,7 @@ print "1..28\n";
 use ActiveState::Run qw(run shell_quote decode_status);
 use Errno;
 use Config;
+require Carp;
 
 $| = 1;
 
@@ -15,7 +16,9 @@ run("-$^X", "-e", "print qq(ok 2\\n); exit 1");
 eval {
    run($^X . ' -e "exit 42"');
 };
-print "not " unless $@ && $@ eq "Command exits with 42:\n  $^X -e \"exit 42\"\n  stopped at @{[__FILE__]} line @{[__LINE__-2]}\n";
+my $expected = "Command exits with 42:\n  $^X -e \"exit 42\"\n  stopped at @{[__FILE__]} line @{[__LINE__-2]}.\n";
+$expected =~ s/\.$// if $Carp::VERSION < 1.25;
+print "not " unless $@ && $@ eq $expected;
 print "ok 3\n";
 
 eval {
@@ -23,7 +26,9 @@ eval {
    run("not-there i hope");
 };
 $! = Errno::ENOENT;
-print "not " unless $@ && $@ eq ($^O eq "MSWin32" ? "Command exits with 1:" : "Command \"not-there\" failed: $!:") . "\n  not-there i hope\n  stopped at @{[__FILE__]} line @{[__LINE__-3]}\n";
+$expected = ($^O eq "MSWin32" ? "Command exits with 1:" : "Command \"not-there\" failed: $!:") . "\n  not-there i hope\n  stopped at @{[__FILE__]} line @{[__LINE__-3]}.\n";
+$expected =~ s/\.$// if $Carp::VERSION < 1.25;
+print "not " unless $@ && $@ eq $expected;
 print "ok 4\n";
 
 print "not " unless shell_quote("a") eq "a";
