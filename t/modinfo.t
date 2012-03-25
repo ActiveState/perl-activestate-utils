@@ -25,7 +25,7 @@ ok(find_module("File::Find"));
 ok(find_module("strict"));
 ok(!find_module("Foo::Bar"));
 
-ok(find_inc("tainted.pl"));
+ok(find_inc("dumpvar.pl"));
 ok(!find_inc("not-there.pl"));
 
 my $fh = open_module("File::Find");
@@ -48,10 +48,10 @@ while (<$fh>) {
 close($fh);
 ok($found);
 
-$fh = open_inc("tainted.pl");
+$fh = open_inc("dumpvar.pl");
 $found = 0;
 while (<$fh>) {
-    $found++, last if /^sub tainted {/;
+    $found++, last if /^sub main::dumpValue {/;
 }
 close($fh);
 ok($found);
