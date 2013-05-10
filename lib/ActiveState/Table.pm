@@ -324,7 +324,7 @@ the number of fields.
 
 =item $t->rows
 
-The returns the current rows.  Each row is returned as reference to an
+This returns the current rows.  Each row is returned as reference to an
 array of values in the same order as the fields. The array might be
 shorter than the number of fields, when the trailing values are C<undef>.
 
