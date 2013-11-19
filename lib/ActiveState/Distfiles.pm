@@ -5,7 +5,7 @@ use base 'Exporter';
 our @EXPORT_OK = qw(distfiles_dir);
 
 my @try = (
-    "/net/nas/data/ppm/distfiles",
+    "/data/ppm/distfiles",
     "$ENV{HOME}/distfiles",
 );
 

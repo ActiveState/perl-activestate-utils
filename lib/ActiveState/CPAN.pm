@@ -21,7 +21,7 @@ sub new {
     my %opt = @_;
 
     my @mirrors = (
-	($ASINTRA ? 'http://cpan.nas.activestate.com/' : ()),
+	($ASINTRA ? 'http://cpan.nas1.activestate.com/' : ()),
         'http://ppm.activestate.com/CPAN/',
         'http://cpan.perl.org/',
 
@@ -31,7 +31,7 @@ sub new {
                 "C:\\CPAN",
                 "C:\\Perl\\CPAN",
             ) : (
-                ($ASINTRA ? '/net/nas/data/cpan' : ()),
+                ($ASINTRA ? '/data/cpan' : ()),
                 '/opt/perl/CPAN/',
                 '/usr/local/share/CPAN/',
                 '/usr/local/CPAN/',
