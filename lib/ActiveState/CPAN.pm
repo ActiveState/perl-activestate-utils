@@ -8,7 +8,7 @@ require IO::Handle;  # for flush
 
 our $VERSION = "1.01";
 
-my $ASINTRA = gethostbyname("cpan.nas.activestate.com");
+my $ASINTRA = gethostbyname("cpan.nas1.activestate.com");
 
 # cache (file system, partial mirror)
 # mirror
@@ -81,7 +81,7 @@ sub new {
     }
     else {
 	$backpans = [
-	     $ASINTRA ? ("http://backpan.nas.activestate.com/") : (),
+	     $ASINTRA ? ("http://backpan.nas1.activestate.com/") : (),
              "http://backpan.cpan.org/",
         ];
     }
