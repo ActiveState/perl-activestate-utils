@@ -502,7 +502,7 @@ sub open {
     my($self, $path) = @_;
     if (my $file = $self->get_file($path)) {
         if ($file =~ /\.gz$/) {
-            open(my $fh, "gunzip -c $file|") || die "Can't gunzip $file: $!";
+            open(my $fh, "gzip -cd $file|") || die "Can't gunzip $file: $!";
             return $fh;
         }
         else {
