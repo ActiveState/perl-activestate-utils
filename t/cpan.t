@@ -24,7 +24,7 @@ $info = $cpan->package_info("authors/id/N/NI/NI-S/Tk800.024.tar.gz");
 ok($info->{name}, "Tk");
 ok($info->{version}, "800.024");
 
-my $next = $cpan->files_iter(matching => qr/libwww-perl-5\.834/);
+my $next = $cpan->files_iter(matching => qr/libwww-perl-5\.837/);
 my $count = 0;
 while (my $f = $next->()) {
     print "$f\n";
@@ -49,7 +49,7 @@ ok($f, undef);
 }
 
 eval {
-     $cpan->unpack("authors/id/G/GA/GAAS/libwww-perl-5.834.readme");
+     $cpan->unpack("authors/id/G/GA/GAAS/libwww-perl-5.837.readme");
 };
 ok($@);
 
@@ -57,10 +57,10 @@ if ($^O eq "MSWin32") {
     skip("Depends on Unix shell stuff", 1) for 1..3;
 }
 else {
-    my $d = $cpan->unpack("authors/id/G/GA/GAAS/libwww-perl-5.834.tar.gz");
-    ok($d, "libwww-perl-5.834");
-    ok(-f "libwww-perl-5.834/lib/LWP.pm");
-    ok(rmtree("libwww-perl-5.834"));
+    my $d = $cpan->unpack("authors/id/G/GA/GAAS/libwww-perl-5.837.tar.gz");
+    ok($d, "libwww-perl-5.837");
+    ok(-f "libwww-perl-5.837/lib/LWP.pm");
+    ok(rmtree("libwww-perl-5.837"));
 }
 
 $cpan->clear_cache;
