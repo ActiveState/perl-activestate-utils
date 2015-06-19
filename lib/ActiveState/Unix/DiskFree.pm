@@ -6,7 +6,6 @@ our @EXPORT_OK = qw(df);
 
 our @df = ("df", "-Pk");
 $df[0] = "/usr/xpg4/bin/df" if $^O eq "solaris";
-$df[1] = "-k" if $^O eq 'darwin';
 
 sub df {
     my @files = @_;
