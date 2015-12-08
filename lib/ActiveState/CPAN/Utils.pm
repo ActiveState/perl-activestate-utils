@@ -82,6 +82,7 @@ sub distname_info {
             $version = $1;
         }
     }
+    $version =~ s/-withoutworldwriteables$//;
     my $maturity = ($version =~ /\d\D\d+_\d/) ? "developer" : "released";
     return ($name, $version, $maturity, $author, $extension, $path) if wantarray;
     return {
