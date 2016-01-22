@@ -1,0 +1,33 @@
+#!/usr/bin/perl -w
+
+use strict;
+
+use ActiveState::CPAN ();
+use Getopt::Long qw(GetOptions);
+
+my $package;
+my $author;
+my $relative;
+GetOptions(
+   "package" => \$package,
+   "author=s" => \$author,
+   "relative" => \$relative,
+) || usage();
+
+$author = uc($author) if $author;
+
+my $matching = shift;
+$matching = qr/$matching/ if $matching;
+
+usage() if @ARGV;
+
+my $cpan = ActiveState::CPAN->new;
+my $gen = $cpan->files_iter(matching => $matching, package => $package, author => $author);
+while (my $f = $gen->()) {
+    print +(!$relative && $cpan->get_file($f)) || $f, "\n";
+}
+
+sub usage {
+    (my $progname = $0) =~ s,.*/,,;
+    die "Usage: $progname [--author <author>] [--package] [--relative] <pattern>\n";
+}
