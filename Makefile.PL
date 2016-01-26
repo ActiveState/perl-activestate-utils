@@ -15,7 +15,7 @@ elsif (($ENV{AS_PERL_PRODUCT} || "") =~ /Enterprise/ && $] < 5.012) {
 
 WriteMakefile(
     NAME	 => 'ActiveState::Utils',
-    VERSION	 => '2.10',
+    VERSION	 => '2.11',
     DIR		 => $DIR,
     PREREQ_PM    => { 'Time::HiRes' => 1 },
     ($] ge '5.006' ? (
